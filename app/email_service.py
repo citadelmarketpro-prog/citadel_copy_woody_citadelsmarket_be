@@ -1,5 +1,5 @@
 """
-Email service for Citadel Markets Pro
+Email service for Citadel Markets
 Handles all email sending functionality using SMTP
 """
 
@@ -79,7 +79,7 @@ def _header(title, subtitle="", preheader=""):
                         <td style="padding-left:10px; vertical-align:middle;">
                           <span style="font-size:18px; font-weight:700; color:#ffffff; letter-spacing:-0.3px;">CITADEL</span>
                           <span style="font-size:18px; font-weight:300; color:{_BRAND_GREEN}; letter-spacing:-0.3px;">&nbsp;MARKETS</span>
-                          <span style="font-size:11px; font-weight:500; color:#6b7280; letter-spacing:2px; display:block; margin-top:1px;">PRO TRADING PLATFORM</span>
+                          <span style="font-size:11px; font-weight:500; color:#6b7280; letter-spacing:2px; display:block; margin-top:1px;">TRADING PLATFORM</span>
                         </td>
                       </tr>
                     </table>
@@ -123,7 +123,7 @@ def _footer():
               <table cellpadding="0" cellspacing="0" border="0" width="100%">
                 <tr>
                   <td align="center">
-                    <p style="margin:0 0 6px; font-size:13px; font-weight:600; color:#9ca3af; letter-spacing:1px;">CITADEL MARKETS PRO</p>
+                    <p style="margin:0 0 6px; font-size:13px; font-weight:600; color:#9ca3af; letter-spacing:1px;">CITADEL MARKETS</p>
                     <p style="margin:0 0 16px; font-size:11px; color:#4b5563;">Professional Trading &amp; Investment Platform</p>
                     <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 16px;">
                       <tr>
@@ -141,7 +141,7 @@ def _footer():
                       </tr>
                     </table>
                     <p style="margin:0; font-size:11px; color:#374151; line-height:1.6;">
-                      &copy; {year} Citadel Markets Pro. All rights reserved.<br>
+                      &copy; {year} Citadel Markets. All rights reserved.<br>
                       This is an automated message &mdash; please do not reply directly to this email.
                     </p>
                   </td>
@@ -247,7 +247,7 @@ def send_welcome_email(user):
     Returns:
         bool: Success status
     """
-    subject = "Your Citadel Markets Pro Account Is Ready"
+    subject = "Your Citadel Markets Account Is Ready"
     name = user.first_name or "Trader"
 
     steps = [
@@ -291,7 +291,7 @@ def send_welcome_email(user):
       <tr><td align="center">
         <table width="600" class="email-container" cellpadding="0" cellspacing="0" border="0" style="background-color:{_BODY_BG};">
 
-          {_header("Welcome to Citadel Markets Pro", "Your account has been successfully created.", "Welcome! Your trading journey starts here.")}
+          {_header("Welcome to Citadel Markets", "Your account has been successfully created.", "Welcome! Your trading journey starts here.")}
 
           <!-- Body -->
           <tr>
@@ -301,12 +301,12 @@ def send_welcome_email(user):
                   <td class="content-padding" style="padding:32px 40px;">
 
                     <!-- Greeting card -->
-                    {_card(f"""
+                    {_card(f'''
                     <p style="margin:0 0 10px; font-size:22px; font-weight:700; color:{_TEXT_PRIMARY};">Hello, {name}.</p>
                     <p style="margin:0; font-size:15px; color:{_TEXT_MUTED}; line-height:1.7;">
-                      Welcome to <strong style="color:{_TEXT_PRIMARY};">Citadel Markets Pro</strong> &mdash; a professional-grade trading platform giving you access to global markets, expert copy trading, and real-time market intelligence. We're glad to have you on board.
+                      Welcome to <strong style="color:{_TEXT_PRIMARY};">Citadel Markets</strong> &mdash; a professional-grade trading platform giving you access to global markets, expert copy trading, and real-time market intelligence. We're glad to have you on board.
                     </p>
-                    """, padding="28px 32px")}
+                    ''', padding="28px 32px")}
 
                     <!-- Account details strip -->
                     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background:{_ACCENT_LIGHT}; border:1px solid #a7f3d0; border-radius:8px; margin-bottom:16px;">
@@ -328,12 +328,12 @@ def send_welcome_email(user):
                     </table>
 
                     <!-- Steps -->
-                    {_card(f"""
+                    {_card(f'''
                     {_section_heading("Getting Started &mdash; 4 Simple Steps")}
                     <table cellpadding="0" cellspacing="0" border="0" width="100%">
                       {steps_html}
                     </table>
-                    """, padding="28px 32px")}
+                    ''', padding="28px 32px")}
 
                     <!-- CTA -->
                     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:8px;">
@@ -384,7 +384,7 @@ def send_verification_code_email(user, code):
     Returns:
         bool: Success status
     """
-    subject = "Your Email Verification Code &mdash; Citadel Markets Pro"
+    subject = "Your Email Verification Code &mdash; Citadel Markets"
     name = user.first_name or "Trader"
 
     digits_html = "".join(
@@ -416,12 +416,12 @@ def send_verification_code_email(user, code):
                 <tr>
                   <td class="content-padding" style="padding:32px 40px;">
 
-                    {_card(f"""
+                    {_card(f'''
                     <p style="margin:0 0 6px; font-size:16px; font-weight:600; color:{_TEXT_PRIMARY};">Hello, {name}.</p>
                     <p style="margin:0; font-size:14px; color:{_TEXT_MUTED}; line-height:1.7;">
-                      To verify your email address and activate your Citadel Markets Pro account, enter the code below on the verification page.
+                      To verify your email address and activate your Citadel Markets account, enter the code below on the verification page.
                     </p>
-                    """, padding="28px 32px")}
+                    ''', padding="28px 32px")}
 
                     <!-- Code display -->
                     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:{_HEADER_BG}; border-radius:10px; margin-bottom:16px;">
@@ -444,7 +444,7 @@ def send_verification_code_email(user, code):
                         <td style="padding:16px 20px;">
                           <p style="margin:0 0 4px; font-size:12px; font-weight:700; color:#b45309; letter-spacing:0.5px;">&#9888; SECURITY NOTICE</p>
                           <p style="margin:0; font-size:13px; color:#78350f; line-height:1.6;">
-                            Never share this code with anyone. Citadel Markets Pro staff will <strong>never</strong> request your verification code via phone, chat, or email.
+                            Never share this code with anyone. Citadel Markets staff will <strong>never</strong> request your verification code via phone, chat, or email.
                           </p>
                         </td>
                       </tr>
@@ -488,7 +488,7 @@ def send_2fa_code_email(user, code):
     Returns:
         bool: Success status
     """
-    subject = "Login Verification Code &mdash; Citadel Markets Pro"
+    subject = "Login Verification Code &mdash; Citadel Markets"
     name = user.first_name or "Trader"
     timestamp = timezone.now().strftime('%B %d, %Y at %I:%M %p UTC')
 
@@ -521,12 +521,12 @@ def send_2fa_code_email(user, code):
                 <tr>
                   <td class="content-padding" style="padding:32px 40px;">
 
-                    {_card(f"""
+                    {_card(f'''
                     <p style="margin:0 0 6px; font-size:16px; font-weight:600; color:{_TEXT_PRIMARY};">Hello, {name}.</p>
                     <p style="margin:0; font-size:14px; color:{_TEXT_MUTED}; line-height:1.7;">
-                      A sign-in request was made to your Citadel Markets Pro account. Use the code below to complete authentication.
+                      A sign-in request was made to your Citadel Markets account. Use the code below to complete authentication.
                     </p>
-                    """, padding="28px 32px")}
+                    ''', padding="28px 32px")}
 
                     <!-- Code display (blue accent for 2FA) -->
                     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#060d1a; border-radius:10px; margin-bottom:16px;">
@@ -625,7 +625,7 @@ def send_password_reset_email(user, token, uid):
         bool: Success status
     """
     reset_link = f"{settings.FRONTEND_URL}/reset-password?uid={uid}&token={token}"
-    subject = "Password Reset Request &mdash; Citadel Markets Pro"
+    subject = "Password Reset Request &mdash; Citadel Markets"
     name = user.first_name or "Trader"
     timestamp = timezone.now().strftime('%B %d, %Y at %I:%M %p UTC')
 
@@ -643,7 +643,7 @@ def send_password_reset_email(user, token, uid):
       <tr><td align="center">
         <table width="600" class="email-container" cellpadding="0" cellspacing="0" border="0" style="background-color:{_BODY_BG};">
 
-          {_header("Password Reset", "We received a request to reset your password.", "Reset your Citadel Markets Pro password.")}
+          {_header("Password Reset", "We received a request to reset your password.", "Reset your Citadel Markets password.")}
 
           <!-- Body -->
           <tr>
@@ -652,13 +652,13 @@ def send_password_reset_email(user, token, uid):
                 <tr>
                   <td class="content-padding" style="padding:32px 40px;">
 
-                    {_card(f"""
+                    {_card(f'''
                     <p style="margin:0 0 6px; font-size:16px; font-weight:600; color:{_TEXT_PRIMARY};">Hello, {name}.</p>
                     <p style="margin:0; font-size:14px; color:{_TEXT_MUTED}; line-height:1.7;">
-                      We received a password reset request for the Citadel Markets Pro account associated with <strong style="color:{_TEXT_PRIMARY};">{user.email}</strong>.
+                      We received a password reset request for the Citadel Markets account associated with <strong style="color:{_TEXT_PRIMARY};">{user.email}</strong>.
                       Click the button below to choose a new password. This link is valid for <strong>1 hour</strong>.
                     </p>
-                    """, padding="28px 32px")}
+                    ''', padding="28px 32px")}
 
                     <!-- CTA -->
                     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:{_HEADER_BG}; border-radius:10px; margin-bottom:16px;">
@@ -675,10 +675,10 @@ def send_password_reset_email(user, token, uid):
                     </table>
 
                     <!-- Fallback link -->
-                    {_card(f"""
+                    {_card(f'''
                     {_section_heading("Button not working? Copy this link into your browser:")}
                     <p style="margin:0; font-size:12px; color:{_TEXT_MUTED}; word-break:break-all; background-color:{_BODY_BG}; padding:12px 14px; border-radius:6px; border:1px solid {_BORDER}; font-family:'Courier New',monospace; line-height:1.6;">{reset_link}</p>
-                    """, padding="24px 28px")}
+                    ''', padding="24px 28px")}
 
                     <!-- Warning -->
                     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#fffbeb; border:1px solid #fcd34d; border-radius:8px; margin-bottom:24px;">
@@ -772,7 +772,7 @@ def send_admin_deposit_notification(user, transaction):
                     </table>
 
                     <!-- Transaction details -->
-                    {_card(f"""
+                    {_card(f'''
                     {_section_heading("Transaction Details")}
                     <table cellpadding="0" cellspacing="0" border="0" width="100%">
                       {_info_row("Reference ID", transaction.reference)}
@@ -781,10 +781,10 @@ def send_admin_deposit_notification(user, transaction):
                       {_info_row("Units", f"{transaction.unit} {transaction.currency}")}
                       {_info_row("Receipt", receipt_html)}
                     </table>
-                    """, padding="24px 28px", border_left=_BRAND_GREEN)}
+                    ''', padding="24px 28px", border_left=_BRAND_GREEN)}
 
                     <!-- User details -->
-                    {_card(f"""
+                    {_card(f'''
                     {_section_heading("Account Holder", "#3b82f6")}
                     <table cellpadding="0" cellspacing="0" border="0" width="100%">
                       {_info_row("Full Name", f"{user.first_name} {user.last_name}")}
@@ -795,7 +795,7 @@ def send_admin_deposit_notification(user, transaction):
                       {_info_row("Current Balance", f"${user.balance}")}
                       {_info_row("KYC Status", kyc_status)}
                     </table>
-                    """, padding="24px 28px", border_left="#3b82f6")}
+                    ''', padding="24px 28px", border_left="#3b82f6")}
 
                     <!-- Action prompt -->
                     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#fffbeb; border:1px solid #fcd34d; border-radius:8px; margin-bottom:24px;">
@@ -897,7 +897,7 @@ def send_admin_deposit_intent_notification(user, dollar_amount, currency_unit, c
                     </table>
 
                     <!-- Deposit details -->
-                    {_card(f"""
+                    {_card(f'''
                     {_section_heading("Deposit Details")}
                     <table cellpadding="0" cellspacing="0" border="0" width="100%">
                       {_info_row("Currency", currency)}
@@ -905,10 +905,10 @@ def send_admin_deposit_intent_notification(user, dollar_amount, currency_unit, c
                       {_info_row("Initiated At", timestamp)}
                       {_info_row("Receipt", '<span style="color:#9ca3af;">Pending upload (Stage 2)</span>')}
                     </table>
-                    """, padding="24px 28px", border_left=_BRAND_GREEN)}
+                    ''', padding="24px 28px", border_left=_BRAND_GREEN)}
 
                     <!-- User details -->
-                    {_card(f"""
+                    {_card(f'''
                     {_section_heading("Account Holder", "#3b82f6")}
                     <table cellpadding="0" cellspacing="0" border="0" width="100%">
                       {_info_row("Full Name", f"{user.first_name} {user.last_name}")}
@@ -919,7 +919,7 @@ def send_admin_deposit_intent_notification(user, dollar_amount, currency_unit, c
                       {_info_row("Current Balance", f"${user.balance}")}
                       {_info_row("KYC Status", kyc_status)}
                     </table>
-                    """, padding="24px 28px", border_left="#3b82f6")}
+                    ''', padding="24px 28px", border_left="#3b82f6")}
 
                   </td>
                 </tr>
@@ -1019,17 +1019,17 @@ def send_admin_withdrawal_notification(user, transaction, payment_method=None):
                     </table>
 
                     <!-- Transaction details -->
-                    {_card(f"""
+                    {_card(f'''
                     {_section_heading("Transaction Details", "#ef4444")}
                     <table cellpadding="0" cellspacing="0" border="0" width="100%">
                       {_info_row("Reference ID", transaction.reference)}
                       {_info_row("Date &amp; Time", transaction.created_at.strftime('%B %d, %Y at %I:%M %p UTC'))}
                       {_info_row("Amount", f"${transaction.amount}", "#ef4444")}
                     </table>
-                    """, padding="24px 28px", border_left="#ef4444")}
+                    ''', padding="24px 28px", border_left="#ef4444")}
 
                     <!-- User details -->
-                    {_card(f"""
+                    {_card(f'''
                     {_section_heading("Account Holder", "#3b82f6")}
                     <table cellpadding="0" cellspacing="0" border="0" width="100%">
                       {_info_row("Full Name", f"{user.first_name} {user.last_name}")}
@@ -1040,17 +1040,17 @@ def send_admin_withdrawal_notification(user, transaction, payment_method=None):
                       {_info_row("Remaining Balance", f"${user.balance}")}
                       {_info_row("KYC Status", kyc_status)}
                     </table>
-                    """, padding="24px 28px", border_left="#3b82f6")}
+                    ''', padding="24px 28px", border_left="#3b82f6")}
 
                     <!-- Payment destination -->
-                    {_card(f"""
+                    {_card(f'''
                     {_section_heading("Payment Destination", _BRAND_GREEN)}
                     <table cellpadding="0" cellspacing="0" border="0" width="100%">
                       {_info_row("Method", payment_method_info)}
                       {_info_row("Address / Account", f'<span style="font-family:\'Courier New\',monospace; font-size:12px;">{payment_address}</span>')}
                       {bank_row}
                     </table>
-                    """, padding="24px 28px", border_left=_BRAND_GREEN)}
+                    ''', padding="24px 28px", border_left=_BRAND_GREEN)}
 
                   </td>
                 </tr>
