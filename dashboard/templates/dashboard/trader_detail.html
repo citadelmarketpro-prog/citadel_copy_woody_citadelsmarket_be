@@ -1,0 +1,231 @@
+{% extends 'dashboard/base.html' %}
+
+{% block page_title %}{{ trader.name }}{% endblock %}
+{% block page_subtitle %}Trader Details{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 px-2 sm:px-0">
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-4 md:space-y-6">
+        <!-- Trader Overview -->
+        <div class="bg-white rounded-xl shadow-lg p-4 sm:p-5 md:p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
+                <div class="flex items-center">
+                    {% if trader.avatar %}
+                    <div class="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full overflow-hidden flex-shrink-0 mr-3 sm:mr-4 border-2 sm:border-4 border-purple-200">
+                        <img src="{{ trader.avatar.url }}" alt="{{ trader.name }}" class="w-full h-full object-cover">
+                    </div>
+                    {% else %}
+                    <div class="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-xl sm:text-2xl md:text-3xl mr-3 sm:mr-4 flex-shrink-0">
+                        {{ trader.name|first|upper }}
+                    </div>
+                    {% endif %}
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h2 class="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 truncate">{{ trader.name }}</h2>
+                            {% if trader.country_flag %}
+                            <img src="{{ trader.country_flag.url }}" alt="{{ trader.country }}" class="w-5 h-4 sm:w-6 sm:h-4 object-cover rounded border border-gray-300 flex-shrink-0">
+                            {% endif %}
+                        </div>
+                        <p class="text-xs sm:text-sm md:text-base text-gray-600 truncate">{{ trader.username }}</p>
+                        <div class="mt-1">
+                            <span class="inline-flex items-center px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium {% if trader.badge == 'gold' %}bg-yellow-100 text-yellow-800{% elif trader.badge == 'silver' %}bg-gray-200 text-gray-800{% else %}bg-orange-100 text-orange-800{% endif %}">
+                                <i class="fas fa-medal mr-1"></i>{{ trader.badge|capfirst }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <span class="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold self-start sm:self-center {% if trader.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                    {% if trader.is_active %}
+                        <i class="fas fa-check-circle mr-1"></i>Active
+                    {% else %}
+                        <i class="fas fa-times-circle mr-1"></i>Inactive
+                    {% endif %}
+                </span>
+            </div>
+            
+            <!-- Key Stats Grid -->
+            <div class="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4">
+                <div class="bg-green-50 p-2.5 sm:p-3 md:p-4 rounded-lg border border-green-200">
+                    <p class="text-xs text-green-700 mb-0.5 sm:mb-1">Capital</p>
+                    <p class="text-base sm:text-lg md:text-2xl font-bold text-green-600">${{ trader.min_account_threshold }}</p>
+                </div>
+                
+                <div class="bg-blue-50 p-2.5 sm:p-3 md:p-4 rounded-lg border border-blue-200">
+                    <p class="text-xs text-blue-700 mb-0.5 sm:mb-1">Gain</p>
+                    <p class="text-base sm:text-lg md:text-2xl font-bold text-blue-600">+{{ trader.gain }}%</p>
+                </div>
+                
+                <div class="bg-orange-50 p-2.5 sm:p-3 md:p-4 rounded-lg border border-orange-200">
+                    <p class="text-xs text-orange-700 mb-0.5 sm:mb-1">Risk</p>
+                    <p class="text-base sm:text-lg md:text-2xl font-bold text-orange-600">{{ trader.risk }}/10</p>
+                </div>
+                
+                <div class="bg-purple-50 p-2.5 sm:p-3 md:p-4 rounded-lg border border-purple-200">
+                    <p class="text-xs text-purple-700 mb-0.5 sm:mb-1">Copiers</p>
+                    <p class="text-base sm:text-lg md:text-2xl font-bold text-purple-600">{{ trader.copiers }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Trading Statistics -->
+        <div class="bg-white rounded-xl shadow-lg p-4 sm:p-5 md:p-6">
+            <h3 class="text-sm sm:text-base md:text-lg font-bold text-gray-800 mb-3 sm:mb-4 flex items-center">
+                <i class="fas fa-chart-line mr-2 text-blue-600"></i>
+                Trading Statistics
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 md:gap-4">
+                <div class="bg-gray-50 p-3 md:p-4 rounded-lg">
+                    <p class="text-xs md:text-sm text-gray-600 mb-1">Total Trades</p>
+                    <p class="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">{{ trader.trades }}</p>
+                </div>
+                <div class="bg-gray-50 p-3 md:p-4 rounded-lg">
+                    <p class="text-xs md:text-sm text-gray-600 mb-1">Avg Time</p>
+                    <p class="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">{{ trader.avg_trade_time }}</p>
+                </div>
+                <div class="bg-green-50 p-3 md:p-4 rounded-lg">
+                    <p class="text-xs md:text-sm text-green-700 mb-1">Avg Profit</p>
+                    <p class="text-lg sm:text-xl md:text-2xl font-bold text-green-600">{{ trader.avg_profit_percent }}%</p>
+                </div>
+                <div class="bg-red-50 p-3 md:p-4 rounded-lg">
+                    <p class="text-xs md:text-sm text-red-700 mb-1">Avg Loss</p>
+                    <p class="text-lg sm:text-xl md:text-2xl font-bold text-red-600">{{ trader.avg_loss_percent }}%</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Performance Record -->
+        <div class="bg-white rounded-xl shadow-lg p-4 sm:p-5 md:p-6">
+            <h3 class="text-sm sm:text-base md:text-lg font-bold text-gray-800 mb-3 sm:mb-4 flex items-center">
+                <i class="fas fa-trophy mr-2 text-yellow-600"></i>
+                Performance Record
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div class="bg-green-50 border-2 border-green-200 p-3 sm:p-4 rounded-lg text-center">
+                    <p class="text-2xl sm:text-3xl md:text-4xl font-bold text-green-600 mb-2">{{ trader.total_wins }}</p>
+                    <p class="text-xs sm:text-sm text-green-800 font-semibold">Total Wins</p>
+                    <p class="text-xs text-green-600 mt-1">({{ trader.win_rate|floatformat:1 }}%)</p>
+                </div>
+                <div class="bg-red-50 border-2 border-red-200 p-3 sm:p-4 rounded-lg text-center">
+                    <p class="text-2xl sm:text-3xl md:text-4xl font-bold text-red-600 mb-2">{{ trader.total_losses }}</p>
+                    <p class="text-xs sm:text-sm text-red-800 font-semibold">Total Losses</p>
+                    <p class="text-xs text-red-600 mt-1">({{ 100|add:"-"|add:trader.win_rate|floatformat:1 }}%)</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Copy Trades -->
+{% if copy_trades %}
+<div class="bg-white rounded-xl shadow-lg p-4 sm:p-5 md:p-6">
+    <h3 class="text-sm sm:text-base md:text-lg font-bold text-gray-800 mb-3 sm:mb-4 flex items-center">
+        <i class="fas fa-history mr-2 text-blue-600"></i>
+        Recent Trader Trades
+    </h3>
+    <div class="space-y-2 md:space-y-3">
+        {% for trade in copy_trades %}
+        <div class="flex items-center justify-between p-2.5 sm:p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+            <div class="flex items-center min-w-0 flex-1">
+                <!-- Market Icon -->
+                <div class="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-xs sm:text-sm mr-2 md:mr-3 flex-shrink-0">
+                    {{ trade.market|slice:":2"|upper }}
+                </div>
+                <div class="min-w-0 flex-1">
+                    <p class="text-xs sm:text-sm font-semibold text-gray-900 truncate">
+                        {{ trade.market_name }}
+                    </p>
+                    <p class="text-xs text-gray-600">
+                        {{ trade.direction|upper }} • {{ trade.status|capfirst }}
+                    </p>
+                </div>
+            </div>
+            <div class="text-right ml-2 flex-shrink-0">
+                <p class="text-xs sm:text-sm font-bold {% if trade.profit_loss_percent >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                    {% if trade.profit_loss_percent >= 0 %}+{% endif %}{{ trade.profit_loss_percent }}%
+                </p>
+                <p class="text-xs text-gray-500">{{ trade.time_ago }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- View All Link -->
+    <div class="mt-4 text-center">
+        <a href="{% url 'dashboard:copy_trades_list' %}?trader={{ trader.id }}" 
+           class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+            View All Trades for {{ trader.name }} →
+        </a>
+    </div>
+</div>
+{% endif %}
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="lg:col-span-1 space-y-4 md:space-y-6">
+        <!-- Additional Stats -->
+        <div class="bg-white rounded-xl shadow-lg p-4 sm:p-5 md:p-6">
+            <h3 class="text-sm sm:text-base md:text-lg font-bold text-gray-800 mb-3 sm:mb-4">
+                <i class="fas fa-info-circle mr-2 text-blue-600"></i>
+                Additional Info
+            </h3>
+            <div class="space-y-2 sm:space-y-3 text-xs sm:text-sm">
+                <div class="flex justify-between border-b pb-2">
+                    <span class="text-gray-600">Country:</span>
+                    <span class="font-bold text-gray-900 truncate ml-2">{{ trader.country }}</span>
+                </div>
+                <div class="flex justify-between border-b pb-2">
+                    <span class="text-gray-600">Subscribers:</span>
+                    <span class="font-bold text-gray-900">{{ trader.subscribers }}</span>
+                </div>
+                <div class="flex justify-between border-b pb-2">
+                    <span class="text-gray-600">Positions:</span>
+                    <span class="font-bold text-gray-900">{{ trader.current_positions }}</span>
+                </div>
+                <div class="flex justify-between border-b pb-2">
+                    <span class="text-gray-600">Rating:</span>
+                    <span class="font-bold text-yellow-600">{{ trader.expert_rating }}/5.00</span>
+                </div>
+                
+                {% if trader.return_ytd %}
+                <div class="flex justify-between border-b pb-2">
+                    <span class="text-gray-600">Return YTD:</span>
+                    <span class="font-bold text-green-600">{{ trader.return_ytd }}%</span>
+                </div>
+                {% endif %}
+                
+                {% if trader.avg_score_7d %}
+                <div class="flex justify-between border-b pb-2">
+                    <span class="text-gray-600">7-Day Score:</span>
+                    <span class="font-bold text-blue-600">{{ trader.avg_score_7d }}</span>
+                </div>
+                {% endif %}
+                
+                {% if trader.profitable_weeks %}
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Profitable Weeks:</span>
+                    <span class="font-bold text-green-600">{{ trader.profitable_weeks }}%</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 sm:p-5 md:p-6">
+            <h3 class="text-sm sm:text-base md:text-lg font-bold text-purple-900 mb-3 sm:mb-4">
+                <i class="fas fa-bolt mr-2"></i>
+                Quick Actions
+            </h3>
+            <div class="space-y-2">
+                <a href="{% url 'dashboard:edit_trader' trader.id %}" class="block w-full text-center px-3 sm:px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition font-semibold text-xs sm:text-sm">
+                    <i class="fas fa-edit mr-1 sm:mr-2"></i>Edit Trader
+                </a>
+                <a href="{% url 'dashboard:traders_list' %}" class="block w-full text-center px-3 sm:px-4 py-2 bg-white text-purple-600 rounded-lg hover:bg-purple-50 transition font-semibold text-xs sm:text-sm">
+                    <i class="fas fa-list mr-1 sm:mr-2"></i>All Traders
+                </a>
+                <a href="{% url 'dashboard:add_copy_trade' %}" class="block w-full text-center px-3 sm:px-4 py-2 bg-white text-purple-600 rounded-lg hover:bg-purple-50 transition font-semibold text-xs sm:text-sm">
+                    <i class="fas fa-plus mr-1 sm:mr-2"></i>Add Copy Trade
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

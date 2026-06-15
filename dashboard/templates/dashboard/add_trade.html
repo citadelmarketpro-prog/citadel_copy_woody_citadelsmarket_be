@@ -1,0 +1,199 @@
+{% extends 'dashboard/base.html' %}
+
+{% block page_title %}Add Trade{% endblock %}
+{% block page_subtitle %}Create a new trade for a user{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-xl shadow-lg p-8">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+            <i class="fas fa-chart-line mr-3 text-blue-600"></i>
+            Add New Trade
+        </h2>
+        
+        <form method="POST" action="{% url 'dashboard:add_trade' %}" id="addTradeForm">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- User Email -->
+                <div class="col-span-2">
+                    <label class="block text-gray-700 font-semibold mb-2">
+                        <i class="fas fa-user mr-2 text-blue-600"></i>
+                        Select User *
+                    </label>
+                    {{ form.user_email }}
+                </div>
+                
+                <!-- Entry Amount -->
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">
+                        <i class="fas fa-coins mr-2 text-blue-600"></i>
+                        Entry Amount *
+                    </label>
+                    {{ form.entry }}
+                </div>
+                
+                <!-- Asset Type -->
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">
+                        <i class="fas fa-th-large mr-2 text-blue-600"></i>
+                        Type *
+                    </label>
+                    {{ form.asset_type }}
+                </div>
+                
+                <!-- Asset -->
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">
+                        <i class="fas fa-bitcoin mr-2 text-blue-600"></i>
+                        Asset *
+                    </label>
+                    <select 
+                        id="id_asset" 
+                        name="asset" 
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                        <option value="">Select type first</option>
+                    </select>
+                </div>
+                
+                <!-- Direction -->
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">
+                        <i class="fas fa-arrows-alt-h mr-2 text-blue-600"></i>
+                        Direction *
+                    </label>
+                    {{ form.direction }}
+                </div>
+                
+                <!-- Profit/Loss -->
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">
+                        <i class="fas fa-chart-bar mr-2 text-blue-600"></i>
+                        Profit/Loss
+                    </label>
+                    {{ form.profit }}
+                </div>
+                
+                <!-- Duration -->
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">
+                        <i class="fas fa-clock mr-2 text-blue-600"></i>
+                        Duration *
+                    </label>
+                    {{ form.duration }}
+                </div>
+                
+                <!-- Rate -->
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">
+                        <i class="fas fa-percentage mr-2 text-blue-600"></i>
+                        Rate (Optional)
+                    </label>
+                    {{ form.rate }}
+                </div>
+            </div>
+            
+            <!-- Submit Buttons -->
+            <div class="flex space-x-4 mt-8">
+                <button 
+                    type="submit" 
+                    class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 shadow-lg hover:shadow-xl"
+                >
+                    <i class="fas fa-plus mr-2"></i>
+                    Add Trade
+                </button>
+                <a 
+                    href="{% url 'dashboard:dashboard' %}" 
+                    class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition duration-200 text-center"
+                >
+                    <i class="fas fa-times mr-2"></i>
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Instructions Card -->
+    <div class="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-6">
+        <h3 class="font-bold text-blue-900 mb-3 flex items-center">
+            <i class="fas fa-info-circle mr-2"></i>
+            Instructions
+        </h3>
+        <ul class="space-y-2 text-blue-800 text-sm">
+            <li class="flex items-start">
+                <i class="fas fa-check mr-2 mt-1"></i>
+                <span>Select the user from the dropdown menu</span>
+            </li>
+            <li class="flex items-start">
+                <i class="fas fa-check mr-2 mt-1"></i>
+                <span>Choose asset type first, then the specific asset will load automatically</span>
+            </li>
+            <li class="flex items-start">
+                <i class="fas fa-check mr-2 mt-1"></i>
+                <span>Enter profit/loss as positive number for profit, negative for loss</span>
+            </li>
+            <li class="flex items-start">
+                <i class="fas fa-check mr-2 mt-1"></i>
+                <span>All required fields are marked with *</span>
+            </li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Dynamic asset loading based on type
+document.getElementById('id_asset_type').addEventListener('change', function() {
+    const assetType = this.value;
+    const assetSelect = document.getElementById('id_asset');
+    
+    if (!assetType) {
+        assetSelect.innerHTML = '<option value="">Select type first</option>';
+        return;
+    }
+    
+    // Show loading
+    assetSelect.innerHTML = '<option value="">Loading...</option>';
+    
+    // Fetch assets based on type
+    fetch(`{% url 'dashboard:get_assets_by_type' %}?type=${assetType}`)
+        .then(response => response.json())
+        .then(data => {
+            assetSelect.innerHTML = '<option value="">Select an asset</option>';
+            data.assets.forEach(asset => {
+                const option = document.createElement('option');
+                option.value = asset.value;
+                option.textContent = asset.label;
+                assetSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching assets:', error);
+            assetSelect.innerHTML = '<option value="">Error loading assets</option>';
+        });
+});
+
+// Form validation
+document.getElementById('addTradeForm').addEventListener('submit', function(e) {
+    const requiredFields = ['user_email', 'entry', 'asset_type', 'asset', 'direction', 'duration'];
+    let isValid = true;
+    
+    requiredFields.forEach(fieldName => {
+        const field = document.getElementById('id_' + fieldName) || document.querySelector(`[name="${fieldName}"]`);
+        if (!field.value) {
+            isValid = false;
+            field.classList.add('border-red-500');
+        } else {
+            field.classList.remove('border-red-500');
+        }
+    });
+    
+    if (!isValid) {
+        e.preventDefault();
+        alert('Please fill in all required fields');
+    }
+});
+</script>
+{% endblock %}

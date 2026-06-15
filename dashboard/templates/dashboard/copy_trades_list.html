@@ -1,0 +1,317 @@
+{% extends 'dashboard/base.html' %}
+{% block page_title %}Copy Trades{% endblock %}
+{% block page_subtitle %}Manage trader copy trading history{% endblock %}
+
+{% block content %}
+<!-- Search and Filter -->
+<div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mb-6">
+  <form method="GET" class="space-y-3 md:space-y-0 md:grid md:grid-cols-4 md:gap-3">
+    <!-- Search Input -->
+    <div>
+      <input
+        type="text"
+        name="search"
+        placeholder="Search by trader, market, reference..."
+        value="{{ request.GET.search }}"
+        class="w-full px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+      />
+    </div>
+
+    <!-- Trader Filter -->
+    <div>
+      <select
+        name="trader"
+        class="w-full px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+      >
+        <option value="">All Traders</option>
+        {% for trader in traders %}
+        <option value="{{ trader.id }}" {% if current_trader == trader.id|stringformat:"s" %}selected{% endif %}>
+          {{ trader.name }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Status Filter -->
+    <div>
+      <select
+        name="status"
+        class="w-full px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+      >
+        <option value="">All Status</option>
+        <option value="open" {% if request.GET.status == "open" %}selected{% endif %}>
+          Open
+        </option>
+        <option value="closed" {% if request.GET.status == "closed" %}selected{% endif %}>
+          Closed
+        </option>
+      </select>
+    </div>
+
+    <!-- Search Button -->
+    <div>
+      <button
+        type="submit"
+        class="w-full px-6 py-2 md:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm md:text-base font-semibold"
+      >
+        <i class="fas fa-search mr-2"></i>Filter
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Copy Trades Table -->
+<div class="bg-white rounded-xl shadow-lg overflow-hidden">
+  <!-- Table Header -->
+  <div class="px-4 md:px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-indigo-50">
+    <div class="flex items-center justify-between">
+      <h3 class="text-base md:text-lg font-semibold text-gray-800 flex items-center">
+        <i class="fas fa-copy mr-2 text-purple-600"></i>
+        Trader Copy Trades
+        
+      </h3>
+        <a
+        href="{% url 'dashboard:add_copy_trade' %}"
+        class="px-3 md:px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition text-xs md:text-sm font-semibold shadow-md"
+      >
+        <i class="fas fa-plus mr-1 md:mr-2"></i>
+        <span class="hidden sm:inline">Add Trader Trade</span>
+        <span class="sm:hidden">Add</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="overflow-auto">
+    <table class="w-full min-w-[900px]">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+          <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+            Trader & Users
+          </th>
+          <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+            Trade Details
+          </th>
+          <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+            Performance
+          </th>
+          <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+            Status
+          </th>
+          <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+            Actions
+          </th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        {% for trade in copy_trades %}
+        <tr class="hover:bg-gray-50 transition">
+          <!-- Trader & Copying Users -->
+          <td class="px-4 md:px-6 py-4">
+            <div class="space-y-2">
+              <!-- Trader Info -->
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <div class="h-10 w-10 md:h-12 md:w-12 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white font-bold text-sm md:text-base shadow-md">
+                    {{ trade.trader.name|first|upper }}
+                  </div>
+                </div>
+                <div class="ml-3">
+                  <div class="text-sm md:text-base font-semibold text-gray-900">
+                    {{ trade.trader.name }}
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    @{{ trade.trader.username }}
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Copying Users Count -->
+              <div class="mt-2 flex items-center text-xs">
+                <div class="px-2 py-1 bg-blue-100 rounded-full flex items-center">
+                  <i class="fas fa-users mr-1 text-blue-600"></i>
+                  <span class="font-semibold text-blue-800">{{ trade.copying_users_count }}</span>
+                  <span class="ml-1 text-blue-700">user{{ trade.copying_users_count|pluralize }}</span>
+                </div>
+              </div>
+            </div>
+          </td>
+
+          <!-- Trade Details -->
+          <td class="px-4 md:px-6 py-4">
+            <div class="space-y-1.5">
+              <!-- Market with Logo -->
+              <div class="flex items-center space-x-2">
+                {% if trade.market_logo_url %}
+                <img
+                  src="{{ trade.market_logo_url }}"
+                  alt="{{ trade.market }}"
+                  class="h-6 w-6 rounded-full object-cover shadow-sm"
+                />
+                {% endif %}
+                <span class="text-sm md:text-base font-bold text-gray-900">
+                  {{ trade.market_name }}
+                </span>
+              </div>
+              
+              <!-- Direction Badge -->
+              <div class="flex items-center space-x-2">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold {% if trade.direction == 'buy' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                  <i class="fas fa-arrow-{% if trade.direction == 'buy' %}up{% else %}down{% endif %} mr-1"></i>
+                  {{ trade.direction|upper }}
+                </span>
+                <span class="text-xs text-gray-500">{{ trade.duration }}</span>
+              </div>
+              
+              <!-- Base Amount -->
+              <div class="text-xs text-gray-600">
+                <span class="font-medium">Base:</span> ${{ trade.amount|floatformat:2 }}
+              </div>
+              
+              <!-- Time -->
+              <div class="text-xs text-gray-500">
+                <i class="far fa-clock mr-1"></i>{{ trade.time_ago }}
+              </div>
+              
+              <!-- Reference -->
+              <div class="text-xs text-gray-400 font-mono">
+                {{ trade.reference|truncatechars:15 }}
+              </div>
+            </div>
+          </td>
+
+          <!-- Performance (P/L %) -->
+          <td class="px-4 md:px-6 py-4">
+            <div class="space-y-2">
+              <!-- P/L Percentage -->
+              <div class="{% if trade.profit_loss_percent >= 0 %}bg-green-50{% else %}bg-red-50{% endif %} rounded-lg px-3 py-2 inline-block">
+                <div class="text-lg md:text-xl font-bold {% if trade.profit_loss_percent >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                  {% if trade.profit_loss_percent >= 0 %}+{% endif %}{{ trade.profit_loss_percent|floatformat:2 }}%
+                </div>
+              </div>
+              
+              <!-- Price Info -->
+              <div class="space-y-1">
+                <div class="text-xs text-gray-600">
+                  <span class="font-medium">Entry:</span> ${{ trade.entry_price|floatformat:2 }}
+                </div>
+                {% if trade.exit_price %}
+                <div class="text-xs text-gray-600">
+                  <span class="font-medium">Exit:</span> ${{ trade.exit_price|floatformat:2 }}
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </td>
+
+          <!-- Status -->
+          <td class="px-4 md:px-6 py-4">
+            <div class="space-y-2">
+              <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold {% if trade.status == 'open' %}bg-emerald-100 text-emerald-800{% else %}bg-slate-100 text-slate-800{% endif %}">
+                <span class="w-2 h-2 rounded-full mr-2 {% if trade.status == 'open' %}bg-emerald-500 animate-pulse{% else %}bg-slate-500{% endif %}"></span>
+                {{ trade.status|capfirst }}
+              </span>
+              
+              {% if trade.status == 'closed' and trade.closed_at %}
+              <div class="text-xs text-gray-500">
+                <i class="far fa-calendar-check mr-1"></i>{{ trade.closed_at|date:"M d, Y" }}
+              </div>
+              {% else %}
+              <div class="text-xs text-gray-500">
+                <i class="far fa-calendar-plus mr-1"></i>{{ trade.opened_at|date:"M d, Y" }}
+              </div>
+              {% endif %}
+            </div>
+          </td>
+
+          <!-- Actions -->
+          <td class="px-4 md:px-6 py-4 whitespace-nowrap">
+            <div class="flex flex-col space-y-2">
+              <a
+                href="{% url 'dashboard:copy_trade_detail' trade.id %}"
+                class="inline-flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-xs md:text-sm font-semibold shadow-sm"
+              >
+                <i class="fas fa-eye mr-2"></i>
+                <span>View Details</span>
+              </a>
+              
+              
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+            <div class="flex flex-col items-center">
+              <i class="fas fa-copy text-6xl mb-4 text-gray-300"></i>
+              <p class="text-lg font-medium text-gray-600 mb-2">No copy trades found</p>
+              <p class="text-sm text-gray-500 mb-4">Get started by adding your first trader trade</p>
+              
+               <a href="{% url 'dashboard:add_copy_trade' %}"
+                class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition font-semibold shadow-md"
+              >
+                <i class="fas fa-plus mr-2"></i>Add First Trader Trade
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if copy_trades.has_other_pages %}
+  <div class="px-4 md:px-6 py-4 border-t border-gray-200 bg-gray-50">
+    <div class="flex items-center justify-between">
+      <div class="text-sm text-gray-600">
+        Showing {{ copy_trades.start_index }} to {{ copy_trades.end_index }} of {{ copy_trades.paginator.count }} trades
+      </div>
+      
+      <div class="flex space-x-2">
+        {% if copy_trades.has_previous %}
+        
+          href="?page={{ copy_trades.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.trader %}&trader={{ request.GET.trader }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}"
+          class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+        >
+          <i class="fas fa-chevron-left"></i>
+        </a>
+        {% endif %}
+        
+        <span class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">
+          {{ copy_trades.number }}
+        </span>
+        
+        {% if copy_trades.has_next %}
+        
+          href="?page={{ copy_trades.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.trader %}&trader={{ request.GET.trader }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}"
+          class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+        >
+          <i class="fas fa-chevron-right"></i>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Info Card -->
+<div class="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6">
+  <div class="flex items-start">
+    <i class="fas fa-info-circle text-blue-600 text-2xl mr-4 mt-1"></i>
+    <div>
+      <h4 class="font-bold text-blue-900 mb-2">📊 Trader-Centric System</h4>
+      <p class="text-sm text-blue-800 mb-2">
+        Each trade entry represents a single trade by a trader that is automatically distributed to all users copying that trader.
+      </p>
+      <ul class="text-sm text-blue-800 space-y-1 ml-4">
+        <li><i class="fas fa-check-circle text-green-600 mr-2"></i>One trade entry affects multiple users</li>
+        <li><i class="fas fa-check-circle text-green-600 mr-2"></i>User profit/loss calculated proportionally</li>
+        <li><i class="fas fa-check-circle text-green-600 mr-2"></i>Click "View Details" to see all affected users</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

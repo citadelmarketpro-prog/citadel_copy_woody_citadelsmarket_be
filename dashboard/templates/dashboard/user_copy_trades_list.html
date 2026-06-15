@@ -1,0 +1,139 @@
+{% extends 'dashboard/base.html' %}
+{% block page_title %}User Copy Trades{% endblock %}
+{% block page_subtitle %}All copy trading records across all users{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="bg-white rounded-xl border border-gray-200 p-4 mb-6">
+    <form method="get" class="flex flex-wrap gap-3">
+        <div class="flex-1 min-w-[200px]">
+            <input type="text" name="search" value="{{ search }}" placeholder="Search market, trader, user, ref…"
+                class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+        </div>
+        <select name="trader" class="px-4 py-2.5 border border-gray-200 rounded-lg text-sm bg-white">
+            <option value="">All Traders</option>
+            {% for t in traders %}
+            <option value="{{ t.id }}" {% if trader_filter == t.id|stringformat:"s" %}selected{% endif %}>{{ t.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="status" class="px-4 py-2.5 border border-gray-200 rounded-lg text-sm bg-white">
+            <option value="">All Status</option>
+            <option value="open" {% if status_filter == 'open' %}selected{% endif %}>Open</option>
+            <option value="closed" {% if status_filter == 'closed' %}selected{% endif %}>Closed</option>
+        </select>
+        <button type="submit" class="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition">
+            <i class="fas fa-search mr-1"></i> Filter
+        </button>
+        {% if search or trader_filter or status_filter %}
+        <a href="{% url 'dashboard:user_copy_trades_list' %}" class="px-5 py-2.5 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition text-center">
+            Clear
+        </a>
+        {% endif %}
+        <a href="{% url 'dashboard:bulk_edit_copy_trade' %}" class="px-5 py-2.5 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 transition">
+            <i class="fas fa-edit mr-1"></i> Bulk Edit
+        </a>
+    </form>
+</div>
+
+<div class="flex items-center justify-between mb-4">
+    <p class="text-sm text-gray-500">{{ trades.paginator.count }} trade record{{ trades.paginator.count|pluralize }}</p>
+</div>
+
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm min-w-[900px]">
+            <thead>
+                <tr class="bg-gray-50 text-left text-xs text-gray-500 uppercase">
+                    <th class="px-5 py-3">User</th>
+                    <th class="px-5 py-3">Trader</th>
+                    <th class="px-5 py-3">Market</th>
+                    <th class="px-5 py-3">Direction</th>
+                    <th class="px-5 py-3">Amount</th>
+                    <th class="px-5 py-3">P/L %</th>
+                    <th class="px-5 py-3">Status</th>
+                    <th class="px-5 py-3">Opened</th>
+                    <th class="px-5 py-3">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for t in trades %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-5 py-3.5">
+                        {% if t.user %}
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-xs">
+                                {{ t.user.email|first|upper }}
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-800 text-xs">{{ t.user.email }}</p>
+                                <p class="text-xs text-gray-400">{{ t.user.first_name }} {{ t.user.last_name }}</p>
+                            </div>
+                        </div>
+                        {% else %}
+                        <span class="text-xs text-gray-400">All Copiers</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-3.5 text-xs">
+                        {% if t.trader %}
+                        <p class="font-medium text-gray-800">{{ t.trader.name }}</p>
+                        <p class="text-gray-400">@{{ t.trader.username }}</p>
+                        {% else %}
+                        <span class="text-gray-400">&mdash;</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-3.5 font-medium text-gray-800">{{ t.market }}</td>
+                    <td class="px-5 py-3.5">
+                        <span class="px-2 py-0.5 rounded text-xs font-medium {% if t.direction == 'buy' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                            {{ t.direction|upper }}
+                        </span>
+                    </td>
+                    <td class="px-5 py-3.5 text-gray-700">${{ t.amount|floatformat:2 }}</td>
+                    <td class="px-5 py-3.5 font-semibold {% if t.profit_loss_percent >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                        {% if t.profit_loss_percent >= 0 %}+{% endif %}{{ t.profit_loss_percent }}%
+                    </td>
+                    <td class="px-5 py-3.5">
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium {% if t.status == 'open' %}bg-blue-50 text-blue-700{% else %}bg-gray-100 text-gray-600{% endif %}">
+                            {{ t.status|capfirst }}
+                        </span>
+                    </td>
+                    <td class="px-5 py-3.5 text-xs text-gray-400">{{ t.opened_at|date:"M d, Y" }}</td>
+                    <td class="px-5 py-3.5">
+                        <div class="flex gap-1">
+                            <a href="{% url 'dashboard:copy_trade_detail' t.id %}"
+                               class="px-2.5 py-1 bg-blue-50 text-blue-600 rounded text-xs font-medium hover:bg-blue-100 transition">View</a>
+                            <a href="{% url 'dashboard:edit_copy_trade' t.id %}"
+                               class="px-2.5 py-1 bg-amber-50 text-amber-600 rounded text-xs font-medium hover:bg-amber-100 transition">Edit</a>
+                            <a href="{% url 'dashboard:delete_copy_trade' t.id %}"
+                               class="px-2.5 py-1 bg-red-50 text-red-600 rounded text-xs font-medium hover:bg-red-100 transition">Delete</a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="px-5 py-12 text-center text-gray-400">No copy trade records found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if trades.has_other_pages %}
+<div class="flex justify-center mt-6 gap-2">
+    {% if trades.has_previous %}
+    <a href="?page={{ trades.previous_page_number }}&search={{ search }}&trader={{ trader_filter }}&status={{ status_filter }}"
+       class="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition">
+        <i class="fas fa-chevron-left text-xs"></i>
+    </a>
+    {% endif %}
+    <span class="px-3 py-2 text-sm text-gray-500">Page {{ trades.number }} of {{ trades.paginator.num_pages }}</span>
+    {% if trades.has_next %}
+    <a href="?page={{ trades.next_page_number }}&search={{ search }}&trader={{ trader_filter }}&status={{ status_filter }}"
+       class="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition">
+        <i class="fas fa-chevron-right text-xs"></i>
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,244 @@
+{% extends 'dashboard/base.html' %}
+{% block page_title %}Bulk Edit Copy Trades{% endblock %}
+{% block page_subtitle %}Select trades then apply a common edit{% endblock %}
+
+{% block content %}
+
+{% if step == 'edit' %}
+<!-- ===== STEP 2: Edit form for selected trades ===== -->
+<div class="mb-4">
+    <a href="{% url 'dashboard:bulk_edit_copy_trade' %}" class="text-sm text-blue-600 hover:text-blue-500 transition">
+        <i class="fas fa-arrow-left mr-1"></i> Back to selection
+    </a>
+</div>
+
+<!-- Selected trades preview -->
+<div class="bg-white rounded-xl border border-gray-200 p-5 mb-6">
+    <h3 class="text-sm font-semibold text-gray-700 mb-3">Editing {{ selected_trades|length }} trade(s):</h3>
+    <div class="overflow-x-auto">
+        <table class="w-full text-xs min-w-[600px]">
+            <thead>
+                <tr class="bg-gray-50 text-left text-gray-500 uppercase">
+                    <th class="px-4 py-2">ID</th>
+                    <th class="px-4 py-2">User</th>
+                    <th class="px-4 py-2">Trader</th>
+                    <th class="px-4 py-2">Market</th>
+                    <th class="px-4 py-2">P/L%</th>
+                    <th class="px-4 py-2">Status</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for t in selected_trades %}
+                <tr>
+                    <td class="px-4 py-2 text-gray-500">#{{ t.id }}</td>
+                    <td class="px-4 py-2">{% if t.user %}{{ t.user.email }}{% else %}&mdash;{% endif %}</td>
+                    <td class="px-4 py-2">{% if t.trader %}{{ t.trader.name }}{% else %}&mdash;{% endif %}</td>
+                    <td class="px-4 py-2">{{ t.market }}</td>
+                    <td class="px-4 py-2 {% if t.profit_loss_percent >= 0 %}text-green-600{% else %}text-red-600{% endif %}">{{ t.profit_loss_percent }}%</td>
+                    <td class="px-4 py-2">{{ t.status|capfirst }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="max-w-3xl">
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <p class="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-5">
+            <i class="fas fa-exclamation-triangle mr-1"></i>
+            All fields below will be applied to every selected trade. Leave prices unchanged if you only want to update status/P&amp;L.
+        </p>
+
+        <form method="post" class="space-y-5">
+            {% csrf_token %}
+            <input type="hidden" name="step" value="apply">
+            <input type="hidden" name="selected_ids" value="{{ selected_ids }}">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">{{ form.market.label }}</label>
+                    {{ form.market }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">{{ form.direction.label }}</label>
+                    {{ form.direction }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">{{ form.duration.label }}</label>
+                    {{ form.duration }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">{{ form.status.label }}</label>
+                    {{ form.status }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">{{ form.amount.label }}</label>
+                    {{ form.amount }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">{{ form.profit_loss_percent.label }}</label>
+                    {{ form.profit_loss_percent }}
+                    {% if form.profit_loss_percent.help_text %}
+                    <p class="text-xs text-gray-400 mt-1">{{ form.profit_loss_percent.help_text }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">{{ form.entry_price.label }}</label>
+                    {{ form.entry_price }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">{{ form.exit_price.label }}</label>
+                    {{ form.exit_price }}
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-600 mb-1">{{ form.closed_at.label }}</label>
+                    {{ form.closed_at }}
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-600 mb-1">{{ form.notes.label }}</label>
+                    {{ form.notes }}
+                </div>
+            </div>
+
+            {% if form.errors %}
+            <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                <ul class="text-sm text-red-600 space-y-1">
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}<li>{{ field|title }}: {{ error }}</li>{% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <div class="flex gap-3 pt-2">
+                <button type="submit" class="px-8 py-3 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-500 transition">
+                    Apply to All Selected
+                </button>
+                <a href="{% url 'dashboard:bulk_edit_copy_trade' %}" class="px-8 py-3 bg-gray-100 text-gray-600 rounded-lg text-sm font-semibold hover:bg-gray-200 transition">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% else %}
+<!-- ===== STEP 1: Select trades ===== -->
+<!-- Filters -->
+<div class="bg-white rounded-xl border border-gray-200 p-4 mb-6">
+    <form method="get" class="flex flex-wrap gap-3">
+        <div class="flex-1 min-w-[200px]">
+            <input type="text" name="search" value="{{ search }}" placeholder="Search market, trader, user, ref…"
+                class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+        </div>
+        <select name="trader" class="px-4 py-2.5 border border-gray-200 rounded-lg text-sm bg-white">
+            <option value="">All Traders</option>
+            {% for t in traders %}
+            <option value="{{ t.id }}" {% if trader_filter == t.id|stringformat:"s" %}selected{% endif %}>{{ t.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="status" class="px-4 py-2.5 border border-gray-200 rounded-lg text-sm bg-white">
+            <option value="">All Status</option>
+            <option value="open" {% if status_filter == 'open' %}selected{% endif %}>Open</option>
+            <option value="closed" {% if status_filter == 'closed' %}selected{% endif %}>Closed</option>
+        </select>
+        <button type="submit" class="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition">Filter</button>
+    </form>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="step" value="select">
+
+    <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-gray-500">{{ trades.paginator.count }} trade(s) found</p>
+        <button type="submit" class="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition">
+            <i class="fas fa-edit mr-1"></i> Edit Selected
+        </button>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm min-w-[800px]">
+                <thead>
+                    <tr class="bg-gray-50 text-left text-xs text-gray-500 uppercase">
+                        <th class="px-4 py-3">
+                            <input type="checkbox" id="select-all" class="rounded">
+                        </th>
+                        <th class="px-4 py-3">ID</th>
+                        <th class="px-4 py-3">User</th>
+                        <th class="px-4 py-3">Trader</th>
+                        <th class="px-4 py-3">Market</th>
+                        <th class="px-4 py-3">Direction</th>
+                        <th class="px-4 py-3">P/L %</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">Opened</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for t in trades %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3">
+                            <input type="checkbox" name="trade_ids" value="{{ t.id }}" class="trade-checkbox rounded">
+                        </td>
+                        <td class="px-4 py-3 text-gray-400 text-xs">#{{ t.id }}</td>
+                        <td class="px-4 py-3">
+                            {% if t.user %}
+                            <p class="font-medium text-gray-800 text-xs">{{ t.user.email }}</p>
+                            {% else %}<span class="text-gray-400 text-xs">All Copiers</span>{% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-xs">{% if t.trader %}{{ t.trader.name }}{% else %}&mdash;{% endif %}</td>
+                        <td class="px-4 py-3 font-medium">{{ t.market }}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-0.5 rounded text-xs {% if t.direction == 'buy' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                                {{ t.direction|upper }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 font-semibold {% if t.profit_loss_percent >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            {% if t.profit_loss_percent >= 0 %}+{% endif %}{{ t.profit_loss_percent }}%
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-0.5 rounded text-xs {% if t.status == 'open' %}bg-blue-100 text-blue-700{% else %}bg-gray-100 text-gray-600{% endif %}">
+                                {{ t.status|capfirst }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-xs text-gray-400">{{ t.opened_at|date:"M d, Y" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="px-4 py-12 text-center text-gray-400">No trades found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if trades.has_other_pages %}
+    <div class="flex justify-center mt-6 gap-2">
+        {% if trades.has_previous %}
+        <a href="?page={{ trades.previous_page_number }}&search={{ search }}&trader={{ trader_filter }}&status={{ status_filter }}"
+           class="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition">
+            <i class="fas fa-chevron-left text-xs"></i>
+        </a>
+        {% endif %}
+        <span class="px-3 py-2 text-sm text-gray-500">Page {{ trades.number }} of {{ trades.paginator.num_pages }}</span>
+        {% if trades.has_next %}
+        <a href="?page={{ trades.next_page_number }}&search={{ search }}&trader={{ trader_filter }}&status={{ status_filter }}"
+           class="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition">
+            <i class="fas fa-chevron-right text-xs"></i>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</form>
+
+<script>
+document.getElementById('select-all').addEventListener('change', function() {
+    document.querySelectorAll('.trade-checkbox').forEach(cb => cb.checked = this.checked);
+});
+</script>
+{% endif %}
+{% endblock %}

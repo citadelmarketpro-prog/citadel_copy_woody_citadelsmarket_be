@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Citadel Markets Pro Admin{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        
+        /* Smooth sidebar transition */
+        #sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        /* Hide sidebar on mobile by default */
+        @media (max-width: 768px) {
+            #sidebar {
+                transform: translateX(-100%);
+            }
+            #sidebar.show {
+                transform: translateX(0);
+            }
+        }
+    </style>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-100">
+    
+    {% if user.is_authenticated and user.is_staff %}
+    
+    <!-- Mobile Menu Button -->
+    <button 
+        id="mobile-menu-button"
+        class="fixed top-4 right-4 z-50 md:hidden bg-blue-600 text-white p-3 rounded-lg shadow-lg"
+        onclick="toggleSidebar()"
+    >
+        <i class="fas fa-bars text-xl"></i>
+    </button>
+    
+    <!-- Overlay for mobile -->
+    <div 
+        id="sidebar-overlay" 
+        class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"
+        onclick="toggleSidebar()"
+    ></div>
+    
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen bg-gradient-to-b from-blue-900 to-blue-800 shadow-2xl">
+        <div class="h-full px-3 py-4 overflow-y-auto pb-20">
+            <!-- Logo -->
+            <div class="mb-8 pb-4 border-b border-blue-700">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-2xl font-bold text-white text-center flex-1">
+                        Citadel Admin
+                    </h2>
+                    <!-- Close button for mobile -->
+                    <button 
+                        class="md:hidden text-white hover:text-gray-200"
+                        onclick="toggleSidebar()"
+                    >
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Navigation -->
+            <ul class="space-y-2 font-medium">
+                <li>
+                    <a href="{% url 'dashboard:dashboard' %}" class="flex items-center p-3 text-white rounded-lg hover:bg-blue-700 {% if request.resolver_match.url_name == 'dashboard' %}bg-blue-700{% endif %}">
+                        <i class="fas fa-home w-6"></i>
+                        <span class="ml-3">Dashboard</span>
+                    </a>
+                </li>
+                
+                <li><div class="text-xs text-blue-300 uppercase tracking-wider mt-6 mb-2 px-3">Users</div></li>
+                <li>
+                    <a href="{% url 'dashboard:users_trade_list' %}" class="flex items-center p-3 text-white rounded-lg hover:bg-blue-700 {% if 'user-trades' in request.path or 'investor' in request.resolver_match.url_name %}bg-blue-700{% endif %}">
+                        <i class="fas fa-wallet w-6"></i>
+                        <span class="ml-3">Investors</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'dashboard:user_copy_trades_list' %}" class="flex items-center p-3 text-white rounded-lg hover:bg-blue-700 {% if 'user-copy-trades' in request.path %}bg-blue-700{% endif %}">
+                        <i class="fas fa-copy w-6"></i>
+                        <span class="ml-3">User Copy Trades</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'dashboard:users' %}" class="flex items-center p-3 text-white rounded-lg hover:bg-blue-700 {% if 'users' in request.path %}bg-blue-700{% endif %}">
+                        <i class="fas fa-users w-6"></i>
+                        <span class="ml-3">Manage Users</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'dashboard:kyc_requests' %}" class="flex items-center p-3 text-white rounded-lg hover:bg-blue-700 {% if 'kyc' in request.path %}bg-blue-700{% endif %}">
+                        <i class="fas fa-id-card w-6"></i>
+                        <span class="ml-3">KYC Requests</span>
+                    </a>
+                </li>
+                
+                <li><div class="text-xs text-blue-300 uppercase tracking-wider mt-6 mb-2 px-3">Requests</div></li>
+                <li>
+                    <a href="{% url 'dashboard:deposits' %}" class="flex items-center p-3 text-white rounded-lg hover:bg-blue-700 {% if 'deposits' in request.path %}bg-blue-700{% endif %}">
+                        <i class="fas fa-arrow-down w-6"></i>
+                        <span class="ml-3">Deposit Requests</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'dashboard:withdrawals' %}" class="flex items-center p-3 text-white rounded-lg hover:bg-blue-700 {% if 'withdrawals' in request.path %}bg-blue-700{% endif %}">
+                        <i class="fas fa-arrow-up w-6"></i>
+                        <span class="ml-3">Withdrawal Requests</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'dashboard:transactions' %}" class="flex items-center p-3 text-white rounded-lg hover:bg-blue-700 {% if 'transactions' in request.path %}bg-blue-700{% endif %}">
+                        <i class="fas fa-exchange-alt w-6"></i>
+                        <span class="ml-3">All Transactions</span>
+                    </a>
+                </li>
+                
+                <li><div class="text-xs text-blue-300 uppercase tracking-wider mt-6 mb-2 px-3">Trading</div></li>
+                <li>
+                    <a href="{% url 'dashboard:add_earnings' %}" class="flex items-center p-3 text-white rounded-lg hover:bg-blue-700 {% if 'add-earnings' in request.path %}bg-blue-700{% endif %}">
+                        <i class="fas fa-dollar-sign w-6"></i>
+                        <span class="ml-3">Add Earnings</span>
+                    </a>
+                </li>
+                
+                <!-- <li><div class="text-xs text-blue-300 uppercase tracking-wider mt-6 mb-2 px-3">Copy Trading</div></li>
+                <li>
+                    <a href="{% url 'dashboard:copy_trades_list' %}" class="flex items-center p-3 text-white rounded-lg hover:bg-blue-700 {% if 'copy-trades' in request.path and 'add' not in request.path and 'bulk-edit' not in request.path and 'edit' not in request.path %}bg-blue-700{% endif %}">
+                        <i class="fas fa-copy w-6"></i>
+                        <span class="ml-3">Copy Trades</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'dashboard:add_copy_trade' %}" class="flex items-center p-3 text-white rounded-lg hover:bg-blue-700 {% if 'copy-trades/add' in request.path %}bg-blue-700{% endif %}">
+                        <i class="fas fa-plus-circle w-6"></i>
+                        <span class="ml-3">Add Copy Trade</span>
+                    </a>
+                </li> -->
+                <li>
+                    <a href="{% url 'dashboard:bulk_edit_copy_trade' %}" class="flex items-center p-3 text-white rounded-lg hover:bg-blue-700 {% if 'bulk-edit' in request.path %}bg-blue-700{% endif %}">
+                        <i class="fas fa-edit w-6"></i>
+                        <span class="ml-3">Bulk Edit Trades</span>
+                    </a>
+                </li>
+                
+                <li><div class="text-xs text-blue-300 uppercase tracking-wider mt-6 mb-2 px-3">Trader Management</div></li>
+                <li>
+                    <a href="{% url 'dashboard:traders_list' %}" class="flex items-center p-3 text-white rounded-lg hover:bg-blue-700 {% if 'traders' in request.path and 'add' not in request.path and 'edit' not in request.path and 'user-experts' not in request.path %}bg-blue-700{% endif %}">
+                        <i class="fas fa-user-tie w-6"></i>
+                        <span class="ml-3">Expert Traders</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'dashboard:user_experts' %}" class="flex items-center p-3 text-white rounded-lg hover:bg-blue-700 {% if 'user-experts' in request.path %}bg-blue-700{% endif %}">
+                        <i class="fas fa-users-cog w-6"></i>
+                        <span class="ml-3">User Experts</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'dashboard:add_trader' %}" class="flex items-center p-3 text-white rounded-lg hover:bg-blue-700 {% if 'traders/add' in request.path %}bg-blue-700{% endif %}">
+                        <i class="fas fa-user-plus w-6"></i>
+                        <span class="ml-3">Add Trader</span>
+                    </a>
+                </li>
+
+                <li><div class="text-xs text-blue-300 uppercase tracking-wider mt-6 mb-2 px-3">Settings</div></li>
+                <li>
+                    <a href="{% url 'dashboard:wallets_list' %}" class="flex items-center p-3 text-white rounded-lg hover:bg-blue-700 {% if 'wallets' in request.path and 'wallet-connections' not in request.path %}bg-blue-700{% endif %}">
+                        <i class="fas fa-wallet w-6"></i>
+                        <span class="ml-3">Admin Wallets</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'dashboard:wallet_connections_list' %}" class="flex items-center p-3 text-white rounded-lg hover:bg-blue-700 {% if 'wallet-connections' in request.path %}bg-blue-700{% endif %}">
+                        <i class="fas fa-link w-6"></i>
+                        <span class="ml-3">Wallet Connections</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'dashboard:cards_list' %}" class="flex items-center p-3 text-white rounded-lg hover:bg-blue-700 {% if 'cards' in request.path %}bg-blue-700{% endif %}">
+                        <i class="fas fa-credit-card w-6"></i>
+                        <span class="ml-3">User Cards</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'dashboard:change_user_password' %}" class="flex items-center p-3 text-white rounded-lg hover:bg-blue-700 {% if 'change-password' in request.path %}bg-blue-700{% endif %}">
+                        <i class="fas fa-key w-6"></i>
+                        <span class="ml-3">Change Password</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <!-- Logout -->
+            <div class="absolute bottom-4 left-0 right-0 px-3">
+                <a href="{% url 'dashboard:logout' %}" class="flex items-center p-3 text-white bg-red-600 rounded-lg hover:bg-red-700">
+                    <i class="fas fa-sign-out-alt w-6"></i>
+                    <span class="ml-3">Logout</span>
+                </a>
+            </div>
+        </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <div class="md:ml-64 p-4 md:p-8">
+        <!-- Top Bar -->
+        <div class="mb-6 md:mb-8">
+            <div class="flex flex-col md:flex-row md:justify-between md:items-center space-y-4 md:space-y-0">
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-800">{% block page_title %}Dashboard{% endblock %}</h1>
+                    <p class="text-gray-600 mt-1 text-sm md:text-base">{% block page_subtitle %}Welcome back{% endblock %}</p>
+                </div>
+                <div class="flex items-center space-x-3 md:space-x-4">
+                    <div class="text-right hidden sm:block">
+                        <p class="text-xs md:text-sm text-gray-600">Logged in as</p>
+                        <p class="font-semibold text-gray-800 text-sm md:text-base">{{ user.email }}</p>
+                    </div>
+                    <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+                        {{ user.email|first|upper }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Messages -->
+        {% if messages %}
+        <div class="mb-6 space-y-2">
+            {% for message in messages %}
+            <div class="p-4 rounded-lg flex items-center justify-between {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% elif message.tags == 'warning' %}bg-yellow-100 text-yellow-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                <div class="flex items-center">
+                    <i class="fas fa-check-circle mr-3"></i>
+                    <span>{{ message }}</span>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-xl font-bold">&times;</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+    </div>
+    
+    {% else %}
+    {% block unauthenticated_content %}{% endblock %}
+    {% endif %}
+    
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            
+            sidebar.classList.toggle('show');
+            overlay.classList.toggle('hidden');
+        }
+        
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('DOMContentLoaded', function() {
+            const overlay = document.getElementById('sidebar-overlay');
+            if (overlay) {
+                overlay.addEventListener('click', toggleSidebar);
+            }
+            
+            // Close sidebar on navigation for mobile
+            const sidebarLinks = document.querySelectorAll('#sidebar a');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    if (window.innerWidth < 768) {
+                        toggleSidebar();
+                    }
+                });
+            });
+        });
+    </script>
+    
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

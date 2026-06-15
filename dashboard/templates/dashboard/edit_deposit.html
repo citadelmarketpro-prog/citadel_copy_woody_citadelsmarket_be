@@ -1,0 +1,185 @@
+{% extends 'dashboard/base.html' %}
+
+{% block page_title %}Edit Deposit{% endblock %}
+{% block page_subtitle %}Modify deposit transaction details{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-2 sm:px-0">
+    <!-- Back Button -->
+    <div class="mb-4">
+        <a href="{% url 'dashboard:deposit_detail' deposit.id %}" class="inline-flex items-center text-blue-600 hover:text-blue-700 transition text-sm">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Back to Deposit Details
+        </a>
+    </div>
+    
+    <!-- Edit Form Card -->
+    <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8">
+        <div class="mb-6">
+            <h3 class="text-xl md:text-2xl font-bold text-gray-800 mb-2">
+                <i class="fas fa-edit mr-2 text-blue-600"></i>
+                Edit Deposit Transaction
+            </h3>
+            <p class="text-sm text-gray-600">Transaction ID: #{{ deposit.id }} | Reference: {{ deposit.reference }}</p>
+        </div>
+        
+        <!-- User Info Banner -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl mr-4">
+                    {{ deposit.user.email|first|upper }}
+                </div>
+                <div>
+                    <p class="font-semibold text-gray-900">{{ deposit.user.email }}</p>
+                    <p class="text-sm text-gray-600">Current Balance: <span class="font-bold text-green-600">${{ deposit.user.balance|floatformat:2 }}</span></p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Warning Message -->
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-yellow-700">
+                        <strong>Warning:</strong> Changing the amount or status will automatically adjust the user's balance.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Edit Form -->
+        <form method="POST" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Grid Layout -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Amount -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        Deposit Amount (USD)
+                        <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.amount }}
+                    {% if form.amount.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.amount.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Currency -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        Currency
+                        <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.currency }}
+                    {% if form.currency.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.currency.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Unit -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        Crypto Unit Amount
+                        <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.unit }}
+                    {% if form.unit.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.unit.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Status -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        Status
+                        <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.status }}
+                    {% if form.status.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.status.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Reference -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    Reference Number
+                    <span class="text-red-500">*</span>
+                </label>
+                {{ form.reference }}
+                {% if form.reference.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.reference.errors.0 }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Description -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    Description
+                </label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.description.errors.0 }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Receipt Upload -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    Payment Receipt
+                </label>
+                {% if deposit.receipt %}
+                <div class="mb-3 p-3 bg-gray-50 rounded-lg">
+                    <p class="text-sm text-gray-600 mb-2">Current Receipt:</p>
+                    <img src="{{ deposit.receipt.url }}" alt="Current Receipt" class="max-w-xs h-auto rounded border">
+                    <a href="{{ deposit.receipt.url }}" target="_blank" class="mt-2 inline-flex items-center text-blue-600 hover:text-blue-700 text-sm">
+                        <i class="fas fa-external-link-alt mr-1"></i>
+                        View Full Size
+                    </a>
+                </div>
+                {% endif %}
+                {{ form.receipt }}
+                {% if form.receipt.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.receipt.errors.0 }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-3 pt-6 border-t">
+                <button 
+                    type="submit" 
+                    class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-bold text-lg"
+                >
+                    <i class="fas fa-save mr-2"></i>
+                    Save Changes
+                </button>
+                
+                <a 
+                    href="{% url 'dashboard:deposit_detail' deposit.id %}" 
+                    class="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-bold text-lg text-center"
+                >
+                    <i class="fas fa-times mr-2"></i>
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Change History (Optional Enhancement) -->
+    <div class="mt-6 bg-gray-50 rounded-xl p-4 sm:p-6">
+        <h4 class="text-lg font-bold text-gray-800 mb-3">
+            <i class="fas fa-history mr-2 text-gray-600"></i>
+            Transaction History
+        </h4>
+        <div class="space-y-2 text-sm text-gray-600">
+            <p><strong>Created:</strong> {{ deposit.created_at|date:"F d, Y g:i A" }}</p>
+            <p><strong>Last Updated:</strong> {{ deposit.updated_at|date:"F d, Y g:i A" }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,193 @@
+{% extends 'dashboard/base.html' %}
+
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Overview of your platform{% endblock %}
+
+{% block content %}
+<!-- Stats Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
+    <!-- Total Users -->
+    <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 border-l-4 border-blue-500">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-600 text-xs md:text-sm font-semibold mb-1">Total Users</p>
+                <p class="text-2xl md:text-3xl font-bold text-gray-800">{{ total_users }}</p>
+            </div>
+            <div class="w-12 h-12 md:w-14 md:h-14 bg-blue-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-users text-xl md:text-2xl text-blue-600"></i>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Verified Users -->
+    <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 border-l-4 border-green-500">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-600 text-xs md:text-sm font-semibold mb-1">Verified Users</p>
+                <p class="text-2xl md:text-3xl font-bold text-gray-800">{{ verified_users }}</p>
+            </div>
+            <div class="w-12 h-12 md:w-14 md:h-14 bg-green-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-check-circle text-xl md:text-2xl text-green-600"></i>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pending KYC -->
+    <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 border-l-4 border-yellow-500">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-600 text-xs md:text-sm font-semibold mb-1">Pending KYC</p>
+                <p class="text-2xl md:text-3xl font-bold text-gray-800">{{ pending_kyc }}</p>
+            </div>
+            <div class="w-12 h-12 md:w-14 md:h-14 bg-yellow-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-id-card text-xl md:text-2xl text-yellow-600"></i>
+            </div>
+        </div>
+        {% if pending_kyc > 0 %}
+        <a href="{% url 'dashboard:kyc_requests' %}" class="text-xs text-yellow-600 hover:text-yellow-700 mt-2 inline-block">
+            View requests →
+        </a>
+        {% endif %}
+    </div>
+    
+    <!-- Pending Requests -->
+    <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 border-l-4 border-red-500">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-600 text-xs md:text-sm font-semibold mb-1">Pending Requests</p>
+                <p class="text-2xl md:text-3xl font-bold text-gray-800">{{ pending_deposits|add:pending_withdrawals }}</p>
+            </div>
+            <div class="w-12 h-12 md:w-14 md:h-14 bg-red-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-clock text-xl md:text-2xl text-red-600"></i>
+            </div>
+        </div>
+        <div class="text-xs text-gray-500 mt-2">
+            {{ pending_deposits }} deposits, {{ pending_withdrawals }} withdrawals
+        </div>
+    </div>
+</div>
+
+<!-- Financial Stats -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
+    <!-- Total Deposits -->
+    <div class="bg-white rounded-xl shadow-lg p-4 md:p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base md:text-lg font-semibold text-gray-800">Total Deposits</h3>
+            <i class="fas fa-arrow-down text-green-500 text-lg md:text-xl"></i>
+        </div>
+        <p class="text-3xl md:text-4xl font-bold text-green-600">${{ total_deposits|floatformat:2 }}</p>
+        <p class="text-xs md:text-sm text-gray-500 mt-2">Completed deposits</p>
+    </div>
+    
+    <!-- Total Withdrawals -->
+    <div class="bg-white rounded-xl shadow-lg p-4 md:p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base md:text-lg font-semibold text-gray-800">Total Withdrawals</h3>
+            <i class="fas fa-arrow-up text-red-500 text-lg md:text-xl"></i>
+        </div>
+        <p class="text-3xl md:text-4xl font-bold text-red-600">${{ total_withdrawals|floatformat:2 }}</p>
+        <p class="text-xs md:text-sm text-gray-500 mt-2">Completed withdrawals</p>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+    <!-- Recent Transactions -->
+    <div class="bg-white rounded-xl shadow-lg p-4 md:p-6">
+        <h3 class="text-base md:text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-exchange-alt mr-2 text-blue-600"></i>
+            Recent Transactions
+        </h3>
+        <div class="space-y-3">
+            {% for transaction in recent_transactions %}
+            <div class="flex items-center justify-between p-2 md:p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div class="flex items-center space-x-2 md:space-x-3">
+                    <div class="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center {% if transaction.transaction_type == 'deposit' %}bg-green-100 text-green-600{% else %}bg-red-100 text-red-600{% endif %}">
+                        <i class="fas fa-{% if transaction.transaction_type == 'deposit' %}arrow-down{% else %}arrow-up{% endif %} text-xs md:text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-800 text-xs md:text-sm truncate max-w-[150px] sm:max-w-none">{{ transaction.user.email }}</p>
+                        <p class="text-xs text-gray-500">{{ transaction.created_at|date:"M d, Y H:i" }}</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="font-bold text-sm md:text-base {% if transaction.transaction_type == 'deposit' %}text-green-600{% else %}text-red-600{% endif %}">
+                        ${{ transaction.amount|floatformat:2 }}
+                    </p>
+                    <span class="text-xs px-2 py-1 rounded {% if transaction.status == 'completed' %}bg-green-100 text-green-700{% elif transaction.status == 'pending' %}bg-yellow-100 text-yellow-700{% else %}bg-red-100 text-red-700{% endif %}">
+                        {{ transaction.status|capfirst }}
+                    </span>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-gray-500 text-center py-4 text-sm">No recent transactions</p>
+            {% endfor %}
+        </div>
+        <a href="{% url 'dashboard:transactions' %}" class="mt-4 block text-center text-blue-600 hover:text-blue-700 font-semibold text-sm md:text-base">
+            View All Transactions →
+        </a>
+    </div>
+    
+    <!-- Recent Users -->
+    <div class="bg-white rounded-xl shadow-lg p-4 md:p-6">
+        <h3 class="text-base md:text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-users mr-2 text-blue-600"></i>
+            Recent Users
+        </h3>
+        <div class="space-y-3">
+            {% for recent_user in recent_users %}
+            <div class="flex items-center justify-between p-2 md:p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div class="flex items-center space-x-2 md:space-x-3">
+                    <div class="w-8 h-8 md:w-10 md:h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                        {{ recent_user.email|first|upper }}
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-800 text-xs md:text-sm truncate max-w-[150px] sm:max-w-none">{{ recent_user.email }}</p>
+                        <p class="text-xs text-gray-500">{{ recent_user.date_joined|date:"M d, Y" }}</p>
+                    </div>
+                </div>
+                <div>
+                    {% if recent_user.is_verified %}
+                    <span class="text-xs px-2 py-1 rounded bg-green-100 text-green-700">
+                        <i class="fas fa-check mr-1"></i><span class="hidden sm:inline">Verified</span>
+                    </span>
+                    {% else %}
+                    <span class="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">
+                        <span class="hidden sm:inline">Unverified</span><i class="fas fa-times sm:hidden"></i>
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-gray-500 text-center py-4 text-sm">No recent users</p>
+            {% endfor %}
+        </div>
+        <a href="{% url 'dashboard:users' %}" class="mt-4 block text-center text-blue-600 hover:text-blue-700 font-semibold text-sm md:text-base">
+            View All Users →
+        </a>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<!-- <div class="mt-6 md:mt-8 bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-4 md:p-6 text-white">
+    <h3 class="text-lg md:text-xl font-bold mb-4">Quick Actions</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        <a href="{% url 'dashboard:add_copy_trade' %}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-3 md:p-4 text-center transition">
+            <i class="fas fa-chart-line text-2xl md:text-3xl mb-2"></i>
+            <p class="font-semibold text-sm md:text-base">Add Trade</p>
+        </a>
+        <a href="{% url 'dashboard:add_earnings' %}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-3 md:p-4 text-center transition">
+            <i class="fas fa-dollar-sign text-2xl md:text-3xl mb-2"></i>
+            <p class="font-semibold text-sm md:text-base">Add Earnings</p>
+        </a>
+        <a href="{% url 'dashboard:deposits' %}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-3 md:p-4 text-center transition">
+            <i class="fas fa-arrow-down text-2xl md:text-3xl mb-2"></i>
+            <p class="font-semibold text-sm md:text-base">Deposits</p>
+        </a>
+        <a href="{% url 'dashboard:withdrawals' %}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-3 md:p-4 text-center transition">
+            <i class="fas fa-arrow-up text-2xl md:text-3xl mb-2"></i>
+            <p class="font-semibold text-sm md:text-base">Withdrawals</p>
+        </a>
+    </div>
+</div> -->
+{% endblock %}

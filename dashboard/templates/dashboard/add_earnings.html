@@ -1,0 +1,123 @@
+{% extends 'dashboard/base.html' %}
+
+{% block page_title %}Add Earnings{% endblock %}
+{% block page_subtitle %}Add earnings to a user's balance or profit{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-xl shadow-lg p-8">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+            <i class="fas fa-dollar-sign mr-3 text-green-600"></i>
+            Add Earnings
+        </h2>
+
+        <form method="POST" action="{% url 'dashboard:add_earnings' %}">
+            {% csrf_token %}
+
+            <div class="space-y-6">
+                <!-- User Email -->
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">
+                        <i class="fas fa-user mr-2 text-green-600"></i>
+                        Select User *
+                    </label>
+                    {{ form.user_email }}
+                </div>
+
+                <!-- Destination: Balance or Profit -->
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-3">
+                        <i class="fas fa-wallet mr-2 text-green-600"></i>
+                        Add To *
+                    </label>
+                    <div class="flex flex-wrap gap-4">
+                        {% for choice in form.destination %}
+                        <label class="destination-option flex items-center gap-3 px-5 py-3 border-2 rounded-xl cursor-pointer transition-all border-gray-200 hover:border-gray-300">
+                            {{ choice.tag }}
+                            <div>
+                                <span class="font-semibold text-gray-700 block">{{ choice.choice_label }}</span>
+                                {% if choice.choice_label == 'Balance' %}
+                                <span class="text-xs text-green-600">Main wallet</span>
+                                {% else %}
+                                <span class="text-xs text-blue-600">Earnings wallet</span>
+                                {% endif %}
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Amount -->
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">
+                        <i class="fas fa-coins mr-2 text-green-600"></i>
+                        Earnings Amount *
+                    </label>
+                    {{ form.amount }}
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">
+                        <i class="fas fa-comment mr-2 text-green-600"></i>
+                        Description
+                    </label>
+                    {{ form.description }}
+                </div>
+            </div>
+
+            <!-- Submit -->
+            <div class="flex space-x-4 mt-8">
+                <button type="submit"
+                    class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 shadow-lg hover:shadow-xl">
+                    <i class="fas fa-plus mr-2"></i>
+                    Add Earnings
+                </button>
+                <a href="{% url 'dashboard:dashboard' %}"
+                    class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition duration-200 text-center">
+                    <i class="fas fa-times mr-2"></i>
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% block extra_scripts %}
+<script>
+(function () {
+    var options = document.querySelectorAll('.destination-option');
+    options.forEach(function (label) {
+        var radio = label.querySelector('input[type="radio"]');
+        if (!radio) return;
+        // Style radios inline (hide native, use card style)
+        radio.style.display = 'none';
+        function refresh() {
+            options.forEach(function (l) {
+                l.classList.remove('border-green-500', 'bg-green-50', 'border-blue-500', 'bg-blue-50');
+                l.classList.add('border-gray-200');
+            });
+            var checked = document.querySelector('.destination-option input[type="radio"]:checked');
+            if (checked) {
+                var parent = checked.closest('.destination-option');
+                parent.classList.remove('border-gray-200');
+                if (checked.value === 'balance') {
+                    parent.classList.add('border-green-500', 'bg-green-50');
+                } else {
+                    parent.classList.add('border-blue-500', 'bg-blue-50');
+                }
+            }
+        }
+        radio.addEventListener('change', refresh);
+        if (radio.checked) refresh();
+    });
+    // Default: select first option (balance)
+    var first = document.querySelector('.destination-option input[type="radio"]');
+    if (first && !document.querySelector('.destination-option input[type="radio"]:checked')) {
+        first.checked = true;
+        first.dispatchEvent(new Event('change'));
+    }
+})();
+</script>
+{% endblock %}
+{% endblock %}

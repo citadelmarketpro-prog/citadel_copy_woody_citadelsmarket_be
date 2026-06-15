@@ -1,0 +1,136 @@
+{% extends 'dashboard/base.html' %}
+
+{% block page_title %}Withdrawal Requests{% endblock %}
+{% block page_subtitle %}Manage withdrawal requests{% endblock %}
+
+{% block content %}
+<!-- Filter Tabs -->
+<div class="bg-white rounded-xl shadow-lg p-3 md:p-4 mb-6">
+    <div class="grid grid-cols-2 md:flex md:flex-wrap gap-2">
+        <a href="{% url 'dashboard:withdrawals' %}" 
+           class="px-3 py-2 md:px-6 md:py-3 text-center rounded-lg transition text-xs md:text-base font-semibold
+                  {% if not request.GET.status or request.GET.status == 'all' %}bg-blue-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+            <i class="fas fa-list mr-1 md:mr-2"></i>All
+        </a>
+        <a href="?status=pending" 
+           class="px-3 py-2 md:px-6 md:py-3 text-center rounded-lg transition text-xs md:text-base font-semibold
+                  {% if request.GET.status == 'pending' %}bg-yellow-500 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+            <i class="fas fa-clock mr-1 md:mr-2"></i>Pending
+        </a>
+        <a href="?status=completed" 
+           class="px-3 py-2 md:px-6 md:py-3 text-center rounded-lg transition text-xs md:text-base font-semibold
+                  {% if request.GET.status == 'completed' %}bg-green-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+            <i class="fas fa-check mr-1 md:mr-2"></i>Completed
+        </a>
+        <a href="?status=failed" 
+           class="px-3 py-2 md:px-6 md:py-3 text-center rounded-lg transition text-xs md:text-base font-semibold
+                  {% if request.GET.status == 'failed' %}bg-red-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+            <i class="fas fa-times mr-1 md:mr-2"></i>Failed
+        </a>
+    </div>
+</div>
+
+<!-- Withdrawals Table -->
+<div class="bg-white rounded-xl shadow-lg overflow-hidden">
+    <!-- Table Header -->
+    <div class="px-4 md:px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <h3 class="text-base md:text-lg font-semibold text-gray-800 flex items-center justify-between">
+            <span>
+                <i class="fas fa-arrow-up mr-2 text-red-600"></i>
+                Withdrawal Requests
+            </span>
+            <span class="text-sm font-normal text-gray-600">
+                {{ paginator.count }} total
+            </span>
+        </h3>
+    </div>
+    
+    <!-- Table -->
+    <div class="overflow-auto">
+        <table class="w-full min-w-[800px]">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User Info</th>
+                    <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                    <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for withdrawal in withdrawals %}
+                <tr class="hover:bg-gray-50 transition">
+                    <!-- User Info -->
+                    <td class="px-4 md:px-6 py-4">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="h-10 w-10 rounded-full bg-red-600 flex items-center justify-center text-white font-bold text-sm">
+                                    {{ withdrawal.user.email|first|upper }}
+                                </div>
+                            </div>
+                            <div class="ml-3">
+                                <div class="text-sm font-medium text-gray-900">
+                                    {{ withdrawal.user.email|truncatechars:30 }}
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    {{ withdrawal.created_at|date:"M d, Y H:i" }}
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    Via: {{ withdrawal.payment_method|title }}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    
+                    <!-- Amount -->
+                    <td class="px-4 md:px-6 py-4">
+                        <div class="text-base md:text-lg font-bold text-red-600">
+                            ${{ withdrawal.amount|floatformat:2 }}
+                        </div>
+                        <div class="text-xs text-gray-500">
+                            Ref: {{ withdrawal.reference|truncatechars:15 }}
+                        </div>
+                    </td>
+                    
+                    <!-- Status -->
+                    <td class="px-4 md:px-6 py-4">
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium 
+                            {% if withdrawal.status == 'completed' %}bg-green-100 text-green-800
+                            {% elif withdrawal.status == 'pending' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {{ withdrawal.status|capfirst }}
+                        </span>
+                    </td>
+                    
+                    <!-- Actions -->
+                    <td class="px-4 md:px-6 py-4 whitespace-nowrap">
+                        <a 
+                            href="{% url 'dashboard:withdrawal_detail' withdrawal.id %}" 
+                            class="inline-flex items-center px-3 py-2 
+                                   {% if withdrawal.status == 'pending' %}bg-yellow-600 hover:bg-yellow-700{% else %}bg-blue-600 hover:bg-blue-700{% endif %}
+                                   text-white rounded-lg transition text-xs md:text-sm font-semibold"
+                        >
+                            <i class="fas fa-{% if withdrawal.status == 'pending' %}check-circle{% else %}eye{% endif %} mr-1 md:mr-2"></i>
+                            <span>{% if withdrawal.status == 'pending' %}Review{% else %}View{% endif %}</span>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="px-6 py-12 text-center text-gray-500">
+                        <i class="fas fa-arrow-up text-5xl mb-4 text-gray-300 block"></i>
+                        <p>No withdrawal requests found</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="px-4 md:px-6 py-4 border-t border-gray-200 bg-gray-50">
+        {% include 'dashboard/pagination.html' %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

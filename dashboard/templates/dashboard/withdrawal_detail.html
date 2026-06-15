@@ -1,0 +1,227 @@
+{% extends 'dashboard/base.html' %}
+
+{% block page_title %}Withdrawal Details{% endblock %}
+{% block page_subtitle %}Review withdrawal request{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 px-2 sm:px-0">
+    <!-- Main Content - Withdrawal Information -->
+    <div class="lg:col-span-2 space-y-4 md:space-y-6">
+        <!-- Withdrawal Overview Card -->
+        <div class="bg-white rounded-xl shadow-lg p-4 sm:p-5 md:p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3">
+                <h3 class="text-base sm:text-lg md:text-xl font-bold text-gray-800">
+                    <i class="fas fa-arrow-up mr-2 text-red-600"></i>
+                    Withdrawal Information
+                </h3>
+                <div class="flex items-center gap-2 self-start sm:self-auto">
+                    <span class="px-3 md:px-4 py-1 md:py-2 rounded-full text-xs md:text-sm font-semibold
+                        {% if withdrawal.status == 'completed' %}bg-green-100 text-green-800
+                        {% elif withdrawal.status == 'pending' %}bg-yellow-100 text-yellow-800
+                        {% else %}bg-red-100 text-red-800{% endif %}">
+                        {{ withdrawal.status|capfirst }}
+                    </span>
+                    <a href="{% url 'dashboard:edit_withdrawal' withdrawal.id %}"
+                       class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition">
+                        <i class="fas fa-edit mr-1"></i> Edit
+                    </a>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
+                <!-- Amount -->
+                <div class="bg-red-50 p-3 sm:p-4 rounded-lg border border-red-200">
+                    <p class="text-xs md:text-sm text-red-700 mb-1">Withdrawal Amount</p>
+                    <p class="text-xl sm:text-2xl md:text-3xl font-bold text-red-600">${{ withdrawal.amount|floatformat:2 }}</p>
+                </div>
+                
+                <!-- User Balance -->
+                <div class="bg-blue-50 p-3 sm:p-4 rounded-lg border border-blue-200">
+                    <p class="text-xs md:text-sm text-blue-700 mb-1">User Current Balance</p>
+                    <p class="text-xl sm:text-2xl md:text-3xl font-bold text-blue-600">${{ withdrawal.user.balance|floatformat:2 }}</p>
+                </div>
+                
+                <!-- Reference Number -->
+                <div class="bg-gray-50 p-3 sm:p-4 rounded-lg border border-gray-200">
+                    <p class="text-xs md:text-sm text-gray-600 mb-1">Reference Number</p>
+                    <p class="text-xs sm:text-sm md:text-lg font-mono font-bold text-gray-900 break-all">{{ withdrawal.reference }}</p>
+                </div>
+                
+                <!-- Transaction ID -->
+                <div class="bg-gray-50 p-3 sm:p-4 rounded-lg border border-gray-200">
+                    <p class="text-xs md:text-sm text-gray-600 mb-1">Transaction ID</p>
+                    <p class="text-xs sm:text-sm md:text-lg font-mono font-bold text-gray-900">#{{ withdrawal.id }}</p>
+                </div>
+                
+                <!-- Payment Method -->
+                <div class="bg-purple-50 p-3 sm:p-4 rounded-lg border border-purple-200">
+                    <p class="text-xs md:text-sm text-purple-700 mb-1">Withdrawal Method</p>
+                    <p class="text-sm sm:text-base md:text-lg font-semibold text-purple-900">{{ withdrawal.currency|title }}</p>
+                </div>
+                
+                <!-- Created Date -->
+                <div class="bg-indigo-50 p-3 sm:p-4 rounded-lg border border-indigo-200">
+                    <p class="text-xs md:text-sm text-indigo-700 mb-1">Requested On</p>
+                    <p class="text-sm sm:text-base md:text-lg font-semibold text-indigo-900">{{ withdrawal.created_at|date:"F d, Y" }}</p>
+                    <p class="text-xs md:text-sm text-indigo-600">{{ withdrawal.created_at|date:"h:i A" }}</p>
+                </div>
+            </div>
+            
+            <!-- Payment Details -->
+            {% if withdrawal.wallet_address or withdrawal.account_number or withdrawal.bank_name %}
+            <div class="mt-4 sm:mt-6 border-t pt-4 sm:pt-6">
+                <h4 class="text-sm sm:text-base md:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">
+                    <i class="fas fa-university mr-2 text-blue-600"></i>
+                    Payment Details
+                </h4>
+                <div class="bg-gray-50 p-3 sm:p-4 rounded-lg space-y-2 sm:space-y-3">
+                    {% if withdrawal.wallet_address %}
+                    <div>
+                        <p class="text-xs md:text-sm text-gray-600">Wallet Address</p>
+                        <p class="text-xs sm:text-sm md:text-base font-mono font-bold text-gray-900 break-all">{{ withdrawal.wallet_address }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if withdrawal.bank_name %}
+                    <div>
+                        <p class="text-xs md:text-sm text-gray-600">Bank Name</p>
+                        <p class="text-xs sm:text-sm md:text-base font-semibold text-gray-900">{{ withdrawal.bank_name }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if withdrawal.account_number %}
+                    <div>
+                        <p class="text-xs md:text-sm text-gray-600">Account Number</p>
+                        <p class="text-xs sm:text-sm md:text-base font-mono font-bold text-gray-900">{{ withdrawal.account_number }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if withdrawal.account_name %}
+                    <div>
+                        <p class="text-xs md:text-sm text-gray-600">Account Name</p>
+                        <p class="text-xs sm:text-sm md:text-base font-semibold text-gray-900">{{ withdrawal.account_name }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Approval Form (if pending) -->
+        {% if withdrawal.status == 'pending' %}
+        <div class="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4 sm:p-5 md:p-6">
+            <h3 class="text-sm sm:text-base md:text-lg font-bold text-yellow-900 mb-3 sm:mb-4">
+                <i class="fas fa-check-circle mr-2"></i>
+                Review & Process Withdrawal
+            </h3>
+            
+            <div class="bg-red-100 border border-red-300 rounded-lg p-3 md:p-4 mb-3 sm:mb-4">
+                <p class="text-xs md:text-sm text-red-800">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <strong>Note:</strong> If rejected, the amount will be automatically refunded to the user's balance.
+                </p>
+            </div>
+            
+            <form method="POST" class="space-y-3 sm:space-y-4">
+                {% csrf_token %}
+                
+                <!-- Status Selection -->
+                <div>
+                    <label class="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">
+                        Decision
+                    </label>
+                    {{ form.status }}
+                </div>
+                
+                <!-- Admin Notes -->
+                <div>
+                    <label class="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">
+                        Admin Notes (Optional)
+                    </label>
+                    {{ form.admin_notes }}
+                </div>
+                
+                <!-- Submit Button -->
+                <button 
+                    type="submit" 
+                    class="w-full px-4 sm:px-6 py-2 md:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-bold text-sm sm:text-base md:text-lg"
+                >
+                    <i class="fas fa-check mr-2"></i>
+                    Submit Decision
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Sidebar - User Information -->
+    <div class="lg:col-span-1 space-y-4 md:space-y-6">
+        <!-- User Card -->
+        <div class="bg-white rounded-xl shadow-lg p-4 sm:p-5 md:p-6">
+            <h3 class="text-sm sm:text-base md:text-lg font-bold text-gray-800 mb-3 sm:mb-4">
+                <i class="fas fa-user mr-2 text-blue-600"></i>
+                User Information
+            </h3>
+            
+            <div class="flex flex-col items-center mb-4 sm:mb-6">
+                <div class="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg sm:text-xl md:text-2xl mb-2 sm:mb-3">
+                    {{ withdrawal.user.email|first|upper }}
+                </div>
+                <h4 class="text-sm sm:text-base md:text-lg font-bold text-gray-900 text-center break-words max-w-full px-2">{{ withdrawal.user.email }}</h4>
+                <p class="text-xs md:text-sm text-gray-600">ID: #{{ withdrawal.user.account_id }}</p>
+            </div>
+            
+            <div class="space-y-2 sm:space-y-3 border-t pt-3 sm:pt-4">
+                <div class="flex justify-between text-xs sm:text-sm">
+                    <span class="text-gray-600">Full Name:</span>
+                    <span class="font-semibold text-gray-900 text-right truncate max-w-[60%] sm:max-w-[150px]">
+                        {{ withdrawal.user.first_name }} {{ withdrawal.user.last_name }}
+                    </span>
+                </div>
+                
+                <div class="flex justify-between text-xs sm:text-sm">
+                    <span class="text-gray-600">Balance:</span>
+                    <span class="font-bold text-blue-600">${{ withdrawal.user.balance|floatformat:2 }}</span>
+                </div>
+                
+                <!-- <div class="flex justify-between text-xs sm:text-sm">
+                    <span class="text-gray-600">Profit:</span>
+                    <span class="font-bold {% if withdrawal.user.profit >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                        ${{ withdrawal.user.profit|floatformat:2 }}
+                    </span>
+                </div> -->
+            </div>
+            
+            <div class="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t">
+                <a 
+                    href="{% url 'dashboard:user_detail' withdrawal.user.id %}" 
+                    class="block w-full text-center px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold text-xs sm:text-sm"
+                >
+                    <i class="fas fa-user-circle mr-1 sm:mr-2"></i>
+                    View Full Profile
+                </a>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 sm:p-5 md:p-6">
+            <h3 class="text-sm sm:text-base md:text-lg font-bold text-blue-900 mb-3 sm:mb-4">
+                <i class="fas fa-bolt mr-2"></i>
+                Quick Actions
+            </h3>
+            
+            <div class="space-y-2">
+                <a href="{% url 'dashboard:withdrawals' %}" class="block w-full text-center px-3 sm:px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition font-semibold text-xs md:text-sm">
+                    <i class="fas fa-list mr-1 sm:mr-2"></i>
+                    All Withdrawals
+                </a>
+                
+                <a href="{% url 'dashboard:transactions' %}" class="block w-full text-center px-3 sm:px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition font-semibold text-xs md:text-sm">
+                    <i class="fas fa-exchange-alt mr-1 sm:mr-2"></i>
+                    All Transactions
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
