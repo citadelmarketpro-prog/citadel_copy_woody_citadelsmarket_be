@@ -167,6 +167,8 @@ WHITENOISE_AUTOREFRESH = DEBUG
 # CORS
 # ----------------------------
 CSRF_TRUSTED_ORIGINS = [
+    "https://citadelsmarket.com",
+    "https://www.citadelsmarket.com",
     "https://citadelprosmarket.com",
     "https://www.citadelprosmarket.com",
     "http://103.217.253.60",
@@ -174,7 +176,10 @@ CSRF_TRUSTED_ORIGINS = [
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    "http://localhost:3001",
     "http://103.217.253.60",
+    "https://citadelsmarket.com",
+    "https://www.citadelsmarket.com",
     "https://citadelprosmarket.com",
     "https://www.citadelprosmarket.com",
     "https://citadelmarketspro.netlify.app",
