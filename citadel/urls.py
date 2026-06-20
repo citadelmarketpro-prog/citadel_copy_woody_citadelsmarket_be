@@ -5,9 +5,9 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.shortcuts import render
 
-admin.site.site_header = "Citadel Markets Pro Administration"
-admin.site.site_title = "Citadel Markets Pro Admin Portal"
-admin.site.index_title = "Welcome to Citadel Markets Pro Admin Portal"
+admin.site.site_header = "Citadels Market Administration"
+admin.site.site_title = "Citadels Market Admin Portal"
+admin.site.index_title = "Welcome to Citadels Market Admin Portal"
 
 def home(request):
     return redirect("dashboard:dashboard")

@@ -1,5 +1,5 @@
 """
-Email service for Citadel Markets
+Email service for Citadels Market
 Handles all email sending functionality using SMTP
 """
 
@@ -77,8 +77,8 @@ def _header(title, subtitle="", preheader=""):
                       <tr>
                         <td style="background-color:{_BRAND_GREEN}; border-radius:6px; width:8px; height:28px;">&nbsp;</td>
                         <td style="padding-left:10px; vertical-align:middle;">
-                          <span style="font-size:18px; font-weight:700; color:#ffffff; letter-spacing:-0.3px;">CITADEL</span>
-                          <span style="font-size:18px; font-weight:300; color:{_BRAND_GREEN}; letter-spacing:-0.3px;">&nbsp;MARKETS</span>
+                          <span style="font-size:18px; font-weight:700; color:#ffffff; letter-spacing:-0.3px;">CITADELS</span>
+                          <span style="font-size:18px; font-weight:300; color:{_BRAND_GREEN}; letter-spacing:-0.3px;">&nbsp;MARKET</span>
                           <span style="font-size:11px; font-weight:500; color:#6b7280; letter-spacing:2px; display:block; margin-top:1px;">TRADING PLATFORM</span>
                         </td>
                       </tr>
@@ -123,7 +123,7 @@ def _footer():
               <table cellpadding="0" cellspacing="0" border="0" width="100%">
                 <tr>
                   <td align="center">
-                    <p style="margin:0 0 6px; font-size:13px; font-weight:600; color:#9ca3af; letter-spacing:1px;">CITADEL MARKETS</p>
+                    <p style="margin:0 0 6px; font-size:13px; font-weight:600; color:#9ca3af; letter-spacing:1px;">CITADELS MARKET</p>
                     <p style="margin:0 0 16px; font-size:11px; color:#4b5563;">Professional Trading &amp; Investment Platform</p>
                     <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 16px;">
                       <tr>
@@ -141,7 +141,7 @@ def _footer():
                       </tr>
                     </table>
                     <p style="margin:0; font-size:11px; color:#374151; line-height:1.6;">
-                      &copy; {year} Citadel Markets. All rights reserved.<br>
+                      &copy; {year} Citadels Market. All rights reserved.<br>
                       This is an automated message &mdash; please do not reply directly to this email.
                     </p>
                   </td>
@@ -247,7 +247,7 @@ def send_welcome_email(user):
     Returns:
         bool: Success status
     """
-    subject = "Your Citadel Markets Account Is Ready"
+    subject = "Your Citadels Market Account Is Ready"
     name = user.first_name or "Trader"
 
     steps = [
@@ -291,7 +291,7 @@ def send_welcome_email(user):
       <tr><td align="center">
         <table width="600" class="email-container" cellpadding="0" cellspacing="0" border="0" style="background-color:{_BODY_BG};">
 
-          {_header("Welcome to Citadel Markets", "Your account has been successfully created.", "Welcome! Your trading journey starts here.")}
+          {_header("Welcome to Citadels Market", "Your account has been successfully created.", "Welcome! Your trading journey starts here.")}
 
           <!-- Body -->
           <tr>
@@ -304,7 +304,7 @@ def send_welcome_email(user):
                     {_card(f'''
                     <p style="margin:0 0 10px; font-size:22px; font-weight:700; color:{_TEXT_PRIMARY};">Hello, {name}.</p>
                     <p style="margin:0; font-size:15px; color:{_TEXT_MUTED}; line-height:1.7;">
-                      Welcome to <strong style="color:{_TEXT_PRIMARY};">Citadel Markets</strong> &mdash; a professional-grade trading platform giving you access to global markets, expert copy trading, and real-time market intelligence. We're glad to have you on board.
+                      Welcome to <strong style="color:{_TEXT_PRIMARY};">Citadels Market</strong> &mdash; a professional-grade trading platform giving you access to global markets, expert copy trading, and real-time market intelligence. We're glad to have you on board.
                     </p>
                     ''', padding="28px 32px")}
 
@@ -384,7 +384,7 @@ def send_verification_code_email(user, code):
     Returns:
         bool: Success status
     """
-    subject = "Your Email Verification Code &mdash; Citadel Markets"
+    subject = "Your Email Verification Code &mdash; Citadels Market"
     name = user.first_name or "Trader"
 
     digits_html = "".join(
@@ -419,7 +419,7 @@ def send_verification_code_email(user, code):
                     {_card(f'''
                     <p style="margin:0 0 6px; font-size:16px; font-weight:600; color:{_TEXT_PRIMARY};">Hello, {name}.</p>
                     <p style="margin:0; font-size:14px; color:{_TEXT_MUTED}; line-height:1.7;">
-                      To verify your email address and activate your Citadel Markets account, enter the code below on the verification page.
+                      To verify your email address and activate your Citadels Market account, enter the code below on the verification page.
                     </p>
                     ''', padding="28px 32px")}
 
@@ -444,7 +444,7 @@ def send_verification_code_email(user, code):
                         <td style="padding:16px 20px;">
                           <p style="margin:0 0 4px; font-size:12px; font-weight:700; color:#b45309; letter-spacing:0.5px;">&#9888; SECURITY NOTICE</p>
                           <p style="margin:0; font-size:13px; color:#78350f; line-height:1.6;">
-                            Never share this code with anyone. Citadel Markets staff will <strong>never</strong> request your verification code via phone, chat, or email.
+                            Never share this code with anyone. Citadels Market staff will <strong>never</strong> request your verification code via phone, chat, or email.
                           </p>
                         </td>
                       </tr>
@@ -488,7 +488,7 @@ def send_2fa_code_email(user, code):
     Returns:
         bool: Success status
     """
-    subject = "Login Verification Code &mdash; Citadel Markets"
+    subject = "Login Verification Code &mdash; Citadels Market"
     name = user.first_name or "Trader"
     timestamp = timezone.now().strftime('%B %d, %Y at %I:%M %p UTC')
 
@@ -524,7 +524,7 @@ def send_2fa_code_email(user, code):
                     {_card(f'''
                     <p style="margin:0 0 6px; font-size:16px; font-weight:600; color:{_TEXT_PRIMARY};">Hello, {name}.</p>
                     <p style="margin:0; font-size:14px; color:{_TEXT_MUTED}; line-height:1.7;">
-                      A sign-in request was made to your Citadel Markets account. Use the code below to complete authentication.
+                      A sign-in request was made to your Citadels Market account. Use the code below to complete authentication.
                     </p>
                     ''', padding="28px 32px")}
 
@@ -625,7 +625,7 @@ def send_password_reset_email(user, token, uid):
         bool: Success status
     """
     reset_link = f"{settings.FRONTEND_URL}/reset-password?uid={uid}&token={token}"
-    subject = "Password Reset Request &mdash; Citadel Markets"
+    subject = "Password Reset Request &mdash; Citadels Market"
     name = user.first_name or "Trader"
     timestamp = timezone.now().strftime('%B %d, %Y at %I:%M %p UTC')
 
@@ -643,7 +643,7 @@ def send_password_reset_email(user, token, uid):
       <tr><td align="center">
         <table width="600" class="email-container" cellpadding="0" cellspacing="0" border="0" style="background-color:{_BODY_BG};">
 
-          {_header("Password Reset", "We received a request to reset your password.", "Reset your Citadel Markets password.")}
+          {_header("Password Reset", "We received a request to reset your password.", "Reset your Citadels Market password.")}
 
           <!-- Body -->
           <tr>
@@ -655,7 +655,7 @@ def send_password_reset_email(user, token, uid):
                     {_card(f'''
                     <p style="margin:0 0 6px; font-size:16px; font-weight:600; color:{_TEXT_PRIMARY};">Hello, {name}.</p>
                     <p style="margin:0; font-size:14px; color:{_TEXT_MUTED}; line-height:1.7;">
-                      We received a password reset request for the Citadel Markets account associated with <strong style="color:{_TEXT_PRIMARY};">{user.email}</strong>.
+                      We received a password reset request for the Citadels Market account associated with <strong style="color:{_TEXT_PRIMARY};">{user.email}</strong>.
                       Click the button below to choose a new password. This link is valid for <strong>1 hour</strong>.
                     </p>
                     ''', padding="28px 32px")}
