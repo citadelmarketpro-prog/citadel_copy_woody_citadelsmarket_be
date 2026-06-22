@@ -50,6 +50,10 @@
                 <p class="font-bold text-blue-600 text-lg sm:text-xl">${{ view_user.profit|floatformat:2 }}</p>
             </div>
             <div>
+                <label class="text-gray-600 text-xs sm:text-sm">Deposit Target</label>
+                <p class="font-bold text-purple-600 text-lg sm:text-xl">${{ view_user.target|floatformat:2 }}</p>
+            </div>
+            <div>
                 <label class="text-gray-600 text-xs sm:text-sm">Full Name</label>
                 <p class="font-semibold text-gray-800 text-sm sm:text-base">{{ view_user.first_name }} {{ view_user.last_name }}</p>
             </div>
@@ -129,16 +133,37 @@
         <form method="POST" action="" class="flex flex-col sm:flex-row gap-3 sm:gap-4">
             {% csrf_token %}
             <input type="hidden" name="action" value="update_balance">
-            <input 
-                type="number" 
-                step="0.01" 
-                name="balance" 
+            <input
+                type="number"
+                step="0.01"
+                name="balance"
                 value="{{ view_user.balance }}"
                 class="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                 placeholder="Enter new balance"
             >
             <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base transition whitespace-nowrap">
                 <i class="fas fa-save mr-1 sm:mr-2"></i>Update
+            </button>
+        </form>
+    </div>
+
+    <!-- Update Deposit Target -->
+    <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
+        <h3 class="text-base sm:text-lg font-bold text-gray-800 mb-1">Update Deposit Target</h3>
+        <p class="text-xs text-gray-500 mb-3 sm:mb-4">Sets the target shown on the user's deposit progress bar in their portfolio.</p>
+        <form method="POST" action="" class="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_target">
+            <input
+                type="number"
+                step="0.01"
+                name="target"
+                value="{{ view_user.target }}"
+                class="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm sm:text-base"
+                placeholder="e.g. 50000"
+            >
+            <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base transition whitespace-nowrap">
+                <i class="fas fa-bullseye mr-1 sm:mr-2"></i>Set Target
             </button>
         </form>
     </div>

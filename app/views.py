@@ -151,6 +151,7 @@ def dashboard_data(request):
         'currency': user.currency or 'USD',
         'balance': float(user.balance),
         'profit': float(user.profit),
+        'target': float(user.target),
         'current_loyalty_status': user.current_loyalty_status,
         'next_loyalty_status': user.next_loyalty_status,
         'next_amount_to_upgrade': user.next_amount_to_upgrade,
@@ -3929,6 +3930,56 @@ def get_copy_trade_history(request):
         }
     }, status=status.HTTP_200_OK)
 
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+@authentication_classes([TokenAuthentication])
+def get_asset_growth(request):
+    """
+    GET: Time-series P/L data for the Asset Growth chart.
+    Query params:
+    - period: 1d | 1w | 1m | 3m | 1y | all  (default: 1m)
+    Returns cumulative profit/loss per day within the selected period.
+    """
+    from datetime import timedelta
+
+    user = request.user
+    period = request.GET.get("period", "1m").lower()
+
+    period_deltas = {
+        "1d": timedelta(days=1),
+        "1w": timedelta(weeks=1),
+        "1m": timedelta(days=30),
+        "3m": timedelta(days=90),
+        "1y": timedelta(days=365),
+    }
+
+    qs = UserCopyTraderHistory.objects.filter(user=user).order_by("opened_at")
+    if period in period_deltas:
+        since = timezone.now() - period_deltas[period]
+        qs = qs.filter(opened_at__gte=since)
+
+    daily = defaultdict(float)
+    for trade in qs:
+        date_str = trade.opened_at.date().isoformat()
+        daily[date_str] += float(trade.calculate_user_profit_loss())
+
+    points = []
+    cumulative = 0.0
+    for date_str in sorted(daily.keys()):
+        cumulative += daily[date_str]
+        points.append({
+            "date": date_str,
+            "daily_pnl": round(daily[date_str], 2),
+            "cumulative_pnl": round(cumulative, 2),
+        })
+
+    return Response({
+        "success": True,
+        "period": period,
+        "data": points,
+        "total_pnl": round(cumulative, 2),
+    }, status=status.HTTP_200_OK)
 
 
 # @api_view(["GET"])

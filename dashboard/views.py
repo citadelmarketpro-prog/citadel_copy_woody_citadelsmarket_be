@@ -187,6 +187,13 @@ def user_detail(request, user_id):
                 user.save()
                 messages.success(request, f'Balance updated to ${user.balance}')
 
+        elif action == 'update_target':
+            new_target = request.POST.get('target')
+            if new_target:
+                user.target = Decimal(new_target)
+                user.save()
+                messages.success(request, f'Deposit target updated to ${user.target:,.2f} for {user.email}')
+
         elif action == 'enable_transfer':
             user.can_transfer = True
             user.save()

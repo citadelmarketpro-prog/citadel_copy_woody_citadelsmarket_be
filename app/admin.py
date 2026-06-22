@@ -133,10 +133,11 @@ class CustomUserAdmin(UserAdmin):
     """Admin configuration for CustomUser model"""
     
     list_display = (
-        'email', 'first_name', 'last_name', 'account_id', 
-        'balance', 'profit', 'current_loyalty_status', 
+        'email', 'first_name', 'last_name', 'account_id',
+        'balance', 'profit', 'target', 'current_loyalty_status',
         'is_verified', 'is_active', 'date_joined'
     )
+    list_editable = ('balance', 'profit', 'target')
     list_filter = (
         'is_active', 'is_staff', 'is_verified', 
         'has_submitted_kyc', 'current_loyalty_status', 
@@ -177,7 +178,7 @@ class CustomUserAdmin(UserAdmin):
         }),
         ('Financial', {
             'fields': (
-                'account_id', 'balance', 'profit', 
+                'account_id', 'balance', 'profit', 'target',
                 'current_loyalty_status', 'next_loyalty_status',
                 'next_amount_to_upgrade',
             )
