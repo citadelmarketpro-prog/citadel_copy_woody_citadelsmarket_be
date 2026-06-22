@@ -539,7 +539,8 @@ def get_user_profile(request):
                     "country": user.country,
                     "city": user.city,
                     "region": user.region,
-                    "country_calling_code": user.country_calling_code,  # ADD THIS
+                    "country_calling_code": user.country_calling_code,
+                    "phone": user.phone or "",
                     "is_verified": user.is_verified,
                     "has_submitted_kyc": user.has_submitted_kyc,
                 }
