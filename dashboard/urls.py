@@ -50,6 +50,7 @@ urlpatterns = [
     
     # Trader Management
     path('traders/', views.traders_list, name='traders_list'),
+    path('traders/bulk-update/', views.bulk_update_trader_stats, name='bulk_update_trader_stats'),
     path('traders/add/', views.add_trader, name='add_trader'),
     path('traders/<int:trader_id>/', views.trader_detail, name='trader_detail'),
     path('traders/<int:trader_id>/edit/', views.edit_trader, name='edit_trader'),
