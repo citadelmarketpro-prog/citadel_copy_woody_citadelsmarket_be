@@ -733,6 +733,20 @@ class AddUserDirectTradeForm(forms.Form):
         widget=forms.Textarea(attrs={'class': _textarea, 'rows': 3, 'placeholder': 'Additional notes...'}),
     )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Build market choices: DB stocks first, then any static choices not already covered
+        db_symbols = set()
+        db_choices = []
+        for s in Stock.objects.filter(is_active=True).order_by('symbol').values('symbol', 'name'):
+            db_symbols.add(s['symbol'])
+            db_choices.append((s['symbol'], f"{s['symbol']} - {s['name']}"))
+        static_extra = [
+            (sym, label) for sym, label in UserCopyTraderHistory.MARKET_CHOICES
+            if sym not in db_symbols
+        ]
+        self.fields['market'].choices = [('', 'Select Market / Asset')] + db_choices + static_extra
+
 # ---------------------------------------------------------------------------
 # Admin Wallet Form
 # ---------------------------------------------------------------------------
@@ -873,6 +887,97 @@ class EditCopyTradeForm(forms.Form):
     notes = forms.CharField(
         label="Notes (Optional)", required=False,
         widget=forms.Textarea(attrs={'class': _f, 'rows': 3}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        db_symbols = set()
+        db_choices = []
+        for s in Stock.objects.filter(is_active=True).order_by('symbol').values('symbol', 'name'):
+            db_symbols.add(s['symbol'])
+            db_choices.append((s['symbol'], f"{s['symbol']} - {s['name']}"))
+        static_extra = [
+            (sym, label) for sym, label in UserCopyTraderHistory.MARKET_CHOICES
+            if sym not in db_symbols
+        ]
+        self.fields['market'].choices = [('', 'Select Market / Asset')] + db_choices + static_extra
+
+
+# ===== User Edit Form =====
+
+class UserEditForm(forms.Form):
+    _input = 'w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+    _select = _input
+    _checkbox = 'w-4 h-4 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500'
+
+    # Account
+    first_name  = forms.CharField(required=False, max_length=100, widget=forms.TextInput(attrs={'class': _input}))
+    last_name   = forms.CharField(required=False, max_length=100, widget=forms.TextInput(attrs={'class': _input}))
+    email       = forms.EmailField(widget=forms.EmailInput(attrs={'class': _input}))
+    phone       = forms.CharField(required=False, max_length=100, widget=forms.TextInput(attrs={'class': _input}))
+    currency    = forms.CharField(required=False, max_length=10, widget=forms.TextInput(attrs={'class': _input, 'placeholder': 'USD'}))
+    dob         = forms.DateField(required=False, widget=forms.DateInput(attrs={'class': _input, 'type': 'date'}))
+
+    # Location
+    country     = forms.CharField(required=False, max_length=100, widget=forms.TextInput(attrs={'class': _input}))
+    region      = forms.CharField(required=False, max_length=100, widget=forms.TextInput(attrs={'class': _input}))
+    city        = forms.CharField(required=False, max_length=100, widget=forms.TextInput(attrs={'class': _input}))
+    address     = forms.CharField(required=False, max_length=500, widget=forms.TextInput(attrs={'class': _input}))
+    postal_code = forms.CharField(required=False, max_length=500, widget=forms.TextInput(attrs={'class': _input}))
+
+    # Financials
+    balance = forms.DecimalField(max_digits=20, decimal_places=2, widget=forms.NumberInput(attrs={'class': _input, 'step': '0.01'}))
+    profit  = forms.DecimalField(max_digits=20, decimal_places=2, widget=forms.NumberInput(attrs={'class': _input, 'step': '0.01'}))
+    target  = forms.DecimalField(max_digits=20, decimal_places=2, widget=forms.NumberInput(attrs={'class': _input, 'step': '0.01'}), help_text="Portfolio target for the progress bar")
+
+    # KYC
+    ID_TYPE_CHOICES = [('', '-'), ('passport', 'Passport'), ('driver_license', "Driver's License"), ('national_id', 'National ID'), ('voter_card', "Voter's Card")]
+    id_type = forms.ChoiceField(choices=ID_TYPE_CHOICES, required=False, widget=forms.Select(attrs={'class': _select}))
+
+    # Loyalty
+    LOYALTY_CHOICES = [('iron', 'Iron'), ('bronze', 'Bronze'), ('silver', 'Silver'), ('gold', 'Gold'), ('platinum', 'Platinum'), ('diamond', 'Diamond'), ('elite', 'Elite')]
+    current_loyalty_status = forms.ChoiceField(choices=LOYALTY_CHOICES, widget=forms.Select(attrs={'class': _select}))
+    next_loyalty_status    = forms.ChoiceField(choices=LOYALTY_CHOICES, widget=forms.Select(attrs={'class': _select}))
+    next_amount_to_upgrade = forms.DecimalField(max_digits=20, decimal_places=2, widget=forms.NumberInput(attrs={'class': _input, 'step': '0.01'}))
+
+    # Permissions
+    is_active          = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': _checkbox}))
+    is_verified        = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': _checkbox}))
+    email_verified     = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': _checkbox}))
+    can_transfer       = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': _checkbox}))
+    two_factor_enabled = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': _checkbox}))
+    is_staff           = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': _checkbox}))
+
+    # Dev password
+    new_password = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': _input, 'placeholder': 'Leave blank to keep current', 'autocomplete': 'new-password'}))
+
+
+# ===== Stock Form =====
+
+class StockForm(forms.Form):
+    _input = 'w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+    _checkbox = 'w-4 h-4 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500'
+
+    symbol = forms.CharField(
+        label="Ticker Symbol (e.g. AAPL)", max_length=20,
+        widget=forms.TextInput(attrs={'class': _input, 'placeholder': 'AAPL'}),
+    )
+    name = forms.CharField(
+        label="Full Name", max_length=200,
+        widget=forms.TextInput(attrs={'class': _input, 'placeholder': 'Apple Inc.'}),
+    )
+    image = forms.ImageField(
+        label="Stock Logo / Image",
+        required=False,
+        widget=forms.ClearableFileInput(attrs={'class': _input, 'accept': 'image/*'}),
+    )
+    is_active = forms.BooleanField(
+        label="Active (Visible to users)", required=False, initial=True,
+        widget=forms.CheckboxInput(attrs={'class': _checkbox}),
+    )
+    is_featured = forms.BooleanField(
+        label="Featured (Show prominently)", required=False,
+        widget=forms.CheckboxInput(attrs={'class': _checkbox}),
     )
 
 

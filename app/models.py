@@ -721,8 +721,13 @@ class UserCopyTraderHistory(models.Model):
     
     @property
     def market_logo_url(self):
-        """Get logo URL for the market"""
-        # Map market symbols to logo URLs
+        """Get logo URL — Stock model image takes priority, then hardcoded map."""
+        try:
+            stock = Stock.objects.filter(symbol=self.market, image__isnull=False).exclude(image='').first()
+            if stock and stock.image:
+                return stock.image.url
+        except Exception:
+            pass
         logo_mapping = {
             # Stocks
             'AAPL': 'https://res.cloudinary.com/dkii82r08/image/upload/v1768483429/AAPL_meg5uo.jpg',
@@ -1341,92 +1346,16 @@ class Notification(models.Model):
 # ADD THIS TO YOUR EXISTING models.py FILE AT THE END
 
 class Stock(models.Model):
-    """Model for stock data"""
-    
-    # Popular stock symbols that work with TradingView
-    SYMBOL_CHOICES = [
-        # Tech Giants
-        ("AAPL", "Apple Inc. (AAPL)"),
-        ("MSFT", "Microsoft Corporation (MSFT)"),
-        ("GOOGL", "Alphabet Inc. (GOOGL)"),
-        ("GOOG", "Alphabet Inc. Class C (GOOG)"),
-        ("AMZN", "Amazon.com Inc. (AMZN)"),
-        ("META", "Meta Platforms Inc. (META)"),
-        ("TSLA", "Tesla Inc. (TSLA)"),
-        ("NVDA", "NVIDIA Corporation (NVDA)"),
-        ("AMD", "Advanced Micro Devices (AMD)"),
-        ("INTC", "Intel Corporation (INTC)"),
-        
-        # Streaming & Entertainment
-        ("NFLX", "Netflix Inc. (NFLX)"),
-        ("DIS", "Walt Disney Company (DIS)"),
-        ("SPOT", "Spotify Technology (SPOT)"),
-        ("ROKU", "Roku Inc. (ROKU)"),
-        
-        # Financial & Fintech
-        ("V", "Visa Inc. (V)"),
-        ("MA", "Mastercard Inc. (MA)"),
-        ("PYPL", "PayPal Holdings (PYPL)"),
-        ("SQ", "Block Inc. (SQ)"),
-        ("COIN", "Coinbase Global (COIN)"),
-        ("SOFI", "SoFi Technologies (SOFI)"),
-        ("AFRM", "Affirm Holdings (AFRM)"),
-        
-        # Crypto Mining & Blockchain
-        ("MARA", "Marathon Digital Holdings (MARA)"),
-        ("RIOT", "Riot Platforms Inc. (RIOT)"),
-        ("CLSK", "CleanSpark Inc. (CLSK)"),
-        ("MSTR", "MicroStrategy Inc. (MSTR)"),
-        
-        # E-commerce & Travel
-        ("SHOP", "Shopify Inc. (SHOP)"),
-        ("ABNB", "Airbnb Inc. (ABNB)"),
-        ("UBER", "Uber Technologies (UBER)"),
-        ("DASH", "DoorDash Inc. (DASH)"),
-        
-        # Semiconductors
-        ("AVGO", "Broadcom Inc. (AVGO)"),
-        ("QCOM", "QUALCOMM Inc. (QCOM)"),
-        ("MU", "Micron Technology (MU)"),
-        ("ASML", "ASML Holding (ASML)"),
-        
-        # Software & Cloud
-        ("CRM", "Salesforce Inc. (CRM)"),
-        ("ORCL", "Oracle Corporation (ORCL)"),
-        ("ADBE", "Adobe Inc. (ADBE)"),
-        ("NOW", "ServiceNow Inc. (NOW)"),
-        ("SNOW", "Snowflake Inc. (SNOW)"),
-        ("CRWD", "CrowdStrike Holdings (CRWD)"),
-        ("ZS", "Zscaler Inc. (ZS)"),
-        
-        # Energy & Clean Energy
-        ("ENPH", "Enphase Energy (ENPH)"),
-        ("SEDG", "SolarEdge Technologies (SEDG)"),
-        ("RUN", "Sunrun Inc. (RUN)"),
-        
-        # Other Tech
-        ("SNAP", "Snap Inc. (SNAP)"),
-        ("PINS", "Pinterest Inc. (PINS)"),
-        ("TWLO", "Twilio Inc. (TWLO)"),
-        ("BMR", "Beamr Imaging Ltd. (BMR)"),
-        ("ZM", "Zoom Video Communications (ZM)"),
-        ("DOCU", "DocuSign Inc. (DOCU)"),
-    ]
-    
-    symbol = models.CharField(max_length=10, choices=SYMBOL_CHOICES, unique=True)
+    """Model for stock/asset data"""
+
+    symbol = models.CharField(max_length=20, unique=True)
     name = models.CharField(max_length=200)
-    logo_url = models.URLField(max_length=500, blank=True, null=True)
-    price = models.DecimalField(max_digits=12, decimal_places=2)
-    change = models.DecimalField(max_digits=12, decimal_places=2)
-    change_percent = models.DecimalField(max_digits=8, decimal_places=2)
-    volume = models.BigIntegerField(default=0)
-    market_cap = models.BigIntegerField(default=0)
-    sector = models.CharField(max_length=100, blank=True, null=True)
+    image = CloudinaryField("image", folder="stock_images", blank=True, null=True)
     is_active = models.BooleanField(default=True)
     is_featured = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         verbose_name = "Stock"
         verbose_name_plural = "Stocks"
@@ -1435,35 +1364,9 @@ class Stock(models.Model):
             models.Index(fields=['symbol']),
             models.Index(fields=['is_active', 'is_featured']),
         ]
-    
+
     def __str__(self):
         return f"{self.symbol} - {self.name}"
-    
-    @property
-    def is_positive_change(self):
-        """Check if price change is positive"""
-        return self.change > 0
-    
-    
-
-    @property
-    def formatted_price(self):
-        """Return formatted price string"""
-        if self.price is None:
-            return "-"
-        # Return plain string, not HTML (for API serialization)
-        return f"${float(self.price):,.2f}"
-    
-    @property
-    def formatted_market_cap(self):
-        """Return formatted market cap"""
-        if self.market_cap >= 1_000_000_000_000:
-            return f"${self.market_cap / 1_000_000_000_000:.2f}T"
-        elif self.market_cap >= 1_000_000_000:
-            return f"${self.market_cap / 1_000_000_000:.2f}B"
-        elif self.market_cap >= 1_000_000:
-            return f"${self.market_cap / 1_000_000:.2f}M"
-        return f"${self.market_cap:,}"
 
 
 

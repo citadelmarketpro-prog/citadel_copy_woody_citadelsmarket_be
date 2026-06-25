@@ -30,6 +30,20 @@
     </div>
 </div>
 
+<!-- Search -->
+<div class="bg-white rounded-xl shadow-lg p-3 md:p-4 mb-6">
+    <div class="relative">
+        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+        <input
+            id="kyc-search"
+            type="text"
+            placeholder="Search by email or name…"
+            class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            oninput="filterKYC(this.value)"
+        >
+    </div>
+</div>
+
 <!-- KYC Table -->
 <div class="bg-white rounded-xl shadow-lg overflow-hidden">
     <!-- Table Header -->
@@ -39,7 +53,7 @@
                 <i class="fas fa-id-card mr-2 text-blue-600"></i>
                 KYC Submissions
             </span>
-            <span class="text-sm font-normal text-gray-600">
+            <span id="kyc-count" class="text-sm font-normal text-gray-600">
                 {{ paginator.count }} total
             </span>
         </h3>
@@ -58,7 +72,8 @@
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
                 {% for kyc in kyc_requests %}
-                <tr class="hover:bg-gray-50 transition">
+                <tr class="kyc-row hover:bg-gray-50 transition"
+                    data-search="{{ kyc.email|lower }} {{ kyc.first_name|lower }} {{ kyc.last_name|lower }}">
                     <!-- User Info -->
                     <td class="px-4 md:px-6 py-4">
                         <div class="flex items-center">
@@ -142,4 +157,22 @@
     </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function filterKYC(query) {
+    const q = query.toLowerCase().trim();
+    const rows = document.querySelectorAll('.kyc-row');
+    let visible = 0;
+    rows.forEach(row => {
+        const match = !q || row.dataset.search.includes(q);
+        row.style.display = match ? '' : 'none';
+        if (match) visible++;
+    });
+    document.getElementById('kyc-count').textContent = q
+        ? visible + ' result' + (visible !== 1 ? 's' : '')
+        : '{{ paginator.count }} total';
+}
+</script>
 {% endblock %}

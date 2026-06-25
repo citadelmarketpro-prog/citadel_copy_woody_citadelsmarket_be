@@ -2,6 +2,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
+from django.db import transaction as db_transaction
 from django.db.models import Q, Sum, Count
 from django.utils import timezone
 from django.http import JsonResponse
@@ -19,6 +20,7 @@ from .forms import (
     AddTraderForm, EditTraderForm, EditDepositForm,
     AddUserDirectTradeForm, AdminWalletForm, CardEditForm,
     EditCopyTradeForm, EditWithdrawalForm,
+    UserEditForm, StockForm,
 )
 from .decorators import admin_required
 
@@ -186,6 +188,13 @@ def user_detail(request, user_id):
                 user.balance = Decimal(new_balance)
                 user.save()
                 messages.success(request, f'Balance updated to ${user.balance}')
+
+        elif action == 'update_profit':
+            new_profit = request.POST.get('profit')
+            if new_profit is not None:
+                user.profit = Decimal(new_profit)
+                user.save()
+                messages.success(request, f'Profit updated to ${user.profit:,.2f} for {user.email}')
 
         elif action == 'update_target':
             new_target = request.POST.get('target')
@@ -2242,4 +2251,271 @@ def delete_copy_trade(request, trade_id):
         return redirect('dashboard:user_copy_trades_list')
 
     return render(request, 'dashboard/delete_copy_trade.html', {'trade': trade})
+
+
+# ─── User Edit ────────────────────────────────────────────────────────────────
+
+@admin_required
+def user_edit(request, user_id):
+    obj = get_object_or_404(CustomUser, id=user_id)
+    if request.method == 'POST':
+        form = UserEditForm(request.POST)
+        if form.is_valid():
+            d = form.cleaned_data
+            obj.first_name            = d['first_name']
+            obj.last_name             = d['last_name']
+            obj.email                 = d['email']
+            obj.phone                 = d['phone']
+            obj.country               = d['country']
+            obj.region                = d['region']
+            obj.city                  = d['city']
+            obj.address               = d['address']
+            obj.postal_code           = d['postal_code']
+            obj.currency              = d['currency']
+            obj.dob                   = d['dob']
+            obj.balance               = d['balance']
+            obj.profit                = d['profit']
+            obj.target                = d['target']
+            obj.id_type               = d['id_type']
+            obj.current_loyalty_status = d['current_loyalty_status']
+            obj.next_loyalty_status   = d['next_loyalty_status']
+            obj.next_amount_to_upgrade = d['next_amount_to_upgrade']
+            obj.is_active             = d['is_active']
+            obj.is_verified           = d['is_verified']
+            obj.email_verified        = d['email_verified']
+            obj.can_transfer          = d['can_transfer']
+            obj.two_factor_enabled    = d['two_factor_enabled']
+            obj.is_staff              = d['is_staff']
+            plain = d.get('new_password', '').strip()
+            if plain:
+                obj.set_password(plain)
+                obj.pass_plain_text = plain
+            obj.save()
+            messages.success(request, f'{obj.email} updated successfully.')
+            return redirect('dashboard:user_detail', user_id=obj.id)
+    else:
+        form = UserEditForm(initial={
+            'first_name': obj.first_name, 'last_name': obj.last_name,
+            'email': obj.email, 'phone': obj.phone,
+            'country': obj.country, 'region': obj.region,
+            'city': obj.city, 'address': obj.address,
+            'postal_code': obj.postal_code, 'currency': obj.currency, 'dob': obj.dob,
+            'balance': obj.balance, 'profit': obj.profit, 'target': obj.target,
+            'id_type': obj.id_type or '',
+            'current_loyalty_status': obj.current_loyalty_status,
+            'next_loyalty_status': obj.next_loyalty_status,
+            'next_amount_to_upgrade': obj.next_amount_to_upgrade,
+            'is_active': obj.is_active, 'is_verified': obj.is_verified,
+            'email_verified': obj.email_verified, 'can_transfer': obj.can_transfer,
+            'two_factor_enabled': obj.two_factor_enabled, 'is_staff': obj.is_staff,
+        })
+    return render(request, 'dashboard/edit_user.html', {'form': form, 'view_user': obj})
+
+
+# ─── Delete User ──────────────────────────────────────────────────────────────
+
+@admin_required
+def delete_user(request, user_id):
+    view_user = get_object_or_404(CustomUser, id=user_id)
+
+    if view_user.is_superuser:
+        messages.error(request, "Superuser accounts cannot be deleted.")
+        return redirect('dashboard:user_detail', user_id=user_id)
+
+    if request.user.id == view_user.id:
+        messages.error(request, "You cannot delete your own account.")
+        return redirect('dashboard:user_detail', user_id=user_id)
+
+    if request.method == 'POST':
+        email = view_user.email
+        try:
+            with db_transaction.atomic():
+                try:
+                    from rest_framework_simplejwt.token_blacklist.models import (
+                        BlacklistedToken, OutstandingToken,
+                    )
+                    BlacklistedToken.objects.filter(token__user=view_user).delete()
+                    OutstandingToken.objects.filter(user=view_user).delete()
+                except Exception:
+                    pass
+
+                view_user.portfolios.all().delete()
+                view_user.copy_trade_history.all().delete()
+                view_user.copied_traders.all().delete()
+                view_user.transactions.all().delete()
+                view_user.notifications.all().delete()
+                view_user.stock_positions.all().delete()
+                view_user.wallet_connections.all().delete()
+                view_user.cards.all().delete()
+                view_user.signal_purchases.all().delete()
+                try:
+                    view_user.tickets.all().delete()
+                except Exception:
+                    pass
+                try:
+                    view_user.payment_methods.all().delete()
+                except Exception:
+                    pass
+
+                try:
+                    from django.contrib.admin.models import LogEntry
+                    LogEntry.objects.filter(user=view_user).delete()
+                except Exception:
+                    pass
+
+                CustomUser.objects.filter(referred_by=view_user).update(referred_by=None)
+                view_user.delete()
+
+            messages.success(request, f"User {email} has been permanently deleted.")
+            return redirect('dashboard:users')
+        except Exception as e:
+            messages.error(request, f"Could not delete user: {e}")
+            return redirect('dashboard:user_detail', user_id=user_id)
+
+    return render(request, 'dashboard/delete_user.html', {'view_user': view_user})
+
+
+# ─── Edit User Trade ──────────────────────────────────────────────────────────
+
+@admin_required
+def edit_user_trade(request, user_id, trade_id):
+    viewed_user = get_object_or_404(CustomUser, id=user_id)
+    trade = get_object_or_404(UserCopyTraderHistory, id=trade_id, user=viewed_user, trader__isnull=True)
+    if request.method == 'POST':
+        form = AddUserDirectTradeForm(request.POST)
+        if form.is_valid():
+            cd = form.cleaned_data
+            inv = trade.investment_amount or Decimal('0.00')
+            old_profit = (inv * trade.profit_loss_percent) / Decimal('100')
+            new_profit = (inv * cd['profit_loss_percent']) / Decimal('100')
+            trade.market             = cd['market']
+            trade.direction          = cd['direction']
+            trade.duration           = cd['duration']
+            trade.entry_price        = cd['entry_price']
+            trade.exit_price         = cd.get('exit_price')
+            trade.profit_loss_percent = cd['profit_loss_percent']
+            trade.status             = cd['status']
+            trade.closed_at          = cd.get('closed_at')
+            trade.notes              = cd.get('notes', '')
+            trade.save()
+            viewed_user.profit = (viewed_user.profit or Decimal('0.00')) + (new_profit - old_profit)
+            viewed_user.save(update_fields=['profit'])
+            messages.success(request, f'Trade {trade.reference} updated successfully.')
+            return redirect('dashboard:user_trade_detail', user_id=viewed_user.id)
+    else:
+        form = AddUserDirectTradeForm(initial={
+            'market': trade.market,
+            'direction': trade.direction,
+            'duration': trade.duration,
+            'entry_price': trade.entry_price,
+            'exit_price': trade.exit_price,
+            'profit_loss_percent': trade.profit_loss_percent,
+            'status': trade.status,
+            'closed_at': trade.closed_at.strftime('%Y-%m-%dT%H:%M') if trade.closed_at else None,
+            'notes': trade.notes,
+        })
+    return render(request, 'dashboard/edit_user_trade.html', {
+        'form': form,
+        'viewed_user': viewed_user,
+        'trade': trade,
+    })
+
+
+# ─── Stocks CRUD ─────────────────────────────────────────────────────────────
+
+@admin_required
+def stocks_list(request):
+    search = request.GET.get('search', '')
+    qs = Stock.objects.all().order_by('-is_featured', 'symbol')
+    if search:
+        qs = qs.filter(Q(symbol__icontains=search) | Q(name__icontains=search))
+    paginator = Paginator(qs, 25)
+    page = request.GET.get('page')
+    try:
+        stocks = paginator.page(page)
+    except PageNotAnInteger:
+        stocks = paginator.page(1)
+    except EmptyPage:
+        stocks = paginator.page(paginator.num_pages)
+    return render(request, 'dashboard/stocks_list.html', {
+        'stocks': stocks,
+        'paginator': paginator,
+        'page_obj': stocks,
+        'search': search,
+    })
+
+
+@admin_required
+def stock_detail(request, stock_id):
+    stock = get_object_or_404(Stock, id=stock_id)
+    return render(request, 'dashboard/stock_detail.html', {'stock': stock})
+
+
+@admin_required
+def stock_create(request):
+    if request.method == 'POST':
+        form = StockForm(request.POST, request.FILES)
+        if form.is_valid():
+            cd = form.cleaned_data
+            symbol = cd['symbol'].upper().strip()
+            if Stock.objects.filter(symbol=symbol).exists():
+                form.add_error('symbol', f'A stock with ticker "{symbol}" already exists.')
+            else:
+                stock = Stock.objects.create(
+                    symbol=symbol,
+                    name=cd['name'],
+                    is_active=cd.get('is_active', True),
+                    is_featured=cd.get('is_featured', False),
+                )
+                if cd.get('image'):
+                    stock.image = cd['image']
+                    stock.save(update_fields=['image'])
+                messages.success(request, f'Stock {symbol} created successfully.')
+                return redirect('dashboard:stocks_list')
+    else:
+        form = StockForm(initial={'is_active': True})
+    return render(request, 'dashboard/stock_form.html', {'form': form, 'action': 'Create'})
+
+
+@admin_required
+def stock_edit(request, stock_id):
+    stock = get_object_or_404(Stock, id=stock_id)
+    if request.method == 'POST':
+        form = StockForm(request.POST, request.FILES)
+        if form.is_valid():
+            cd = form.cleaned_data
+            new_symbol = cd['symbol'].upper().strip()
+            if Stock.objects.filter(symbol=new_symbol).exclude(id=stock_id).exists():
+                form.add_error('symbol', f'A stock with ticker "{new_symbol}" already exists.')
+            else:
+                stock.symbol = new_symbol
+                stock.name = cd['name']
+                stock.is_active = cd.get('is_active', True)
+                stock.is_featured = cd.get('is_featured', False)
+                if cd.get('image'):
+                    stock.image = cd['image']
+                    stock.save(update_fields=['symbol', 'name', 'is_active', 'is_featured', 'image'])
+                else:
+                    stock.save(update_fields=['symbol', 'name', 'is_active', 'is_featured'])
+                messages.success(request, f'Stock {stock.symbol} updated.')
+                return redirect('dashboard:stock_detail', stock_id=stock.id)
+    else:
+        form = StockForm(initial={
+            'symbol': stock.symbol,
+            'name': stock.name,
+            'is_active': stock.is_active,
+            'is_featured': stock.is_featured,
+        })
+    return render(request, 'dashboard/stock_form.html', {'form': form, 'stock': stock, 'action': 'Edit'})
+
+
+@admin_required
+def stock_delete(request, stock_id):
+    stock = get_object_or_404(Stock, id=stock_id)
+    if request.method == 'POST':
+        symbol = stock.symbol
+        stock.delete()
+        messages.success(request, f'Stock {symbol} deleted.')
+        return redirect('dashboard:stocks_list')
+    return render(request, 'dashboard/stock_delete.html', {'stock': stock})
 

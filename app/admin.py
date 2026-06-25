@@ -257,31 +257,15 @@ admin.site.register(WalletConnection)
 
 @admin.register(Stock)
 class StockAdmin(admin.ModelAdmin):
-    list_display = [
-        'symbol',
-        'name',
-        'price',
-        'change',
-        'change_percent',
-        'sector',
-        'is_active',
-        'is_featured',
-        'updated_at'
-    ]
-    list_filter = ['is_active', 'is_featured', 'sector', 'created_at']
-    search_fields = ['symbol', 'name', 'sector']
-    list_editable = ['is_active', 'is_featured', 'price']
-    readonly_fields = ['created_at', 'updated_at', 'formatted_price', 'formatted_market_cap']
-    
+    list_display = ['symbol', 'name', 'is_active', 'is_featured', 'updated_at']
+    list_filter = ['is_active', 'is_featured', 'created_at']
+    search_fields = ['symbol', 'name']
+    list_editable = ['is_active', 'is_featured']
+    readonly_fields = ['created_at', 'updated_at']
+
     fieldsets = (
         ('Basic Information', {
-            'fields': ('symbol', 'name', 'logo_url', 'sector')
-        }),
-        ('Price Data', {
-            'fields': ('price', 'change', 'change_percent', 'formatted_price')
-        }),
-        ('Market Data', {
-            'fields': ('volume', 'market_cap', 'formatted_market_cap')
+            'fields': ('symbol', 'name', 'image')
         }),
         ('Status', {
             'fields': ('is_active', 'is_featured')

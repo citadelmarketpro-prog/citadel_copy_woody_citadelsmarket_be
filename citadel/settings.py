@@ -167,12 +167,23 @@ WHITENOISE_AUTOREFRESH = DEBUG
 # CORS
 # ----------------------------
 CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
     "https://citadelsmarket.com",
     "https://www.citadelsmarket.com",
     "https://citadelprosmarket.com",
     "https://www.citadelprosmarket.com",
     "http://103.217.253.60",
 ]
+
+# ----------------------------
+# SESSION
+# ----------------------------
+SESSION_COOKIE_AGE = 86400 * 30        # 30 days
+SESSION_SAVE_EVERY_REQUEST = True       # reset expiry on each request
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",

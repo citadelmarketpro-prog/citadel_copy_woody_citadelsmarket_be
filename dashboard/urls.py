@@ -15,6 +15,8 @@ urlpatterns = [
     # Users management
     path('users/', views.users_list, name='users'),
     path('users/<int:user_id>/', views.user_detail, name='user_detail'),
+    path('users/<int:user_id>/edit/', views.user_edit, name='user_edit'),
+    path('users/<int:user_id>/delete/', views.delete_user, name='delete_user'),
     
     # KYC management
     path('kyc/', views.kyc_requests, name='kyc_requests'),
@@ -67,6 +69,7 @@ urlpatterns = [
     path('user-trades/', views.users_trade_list, name='users_trade_list'),
     path('user-trades/<int:user_id>/', views.user_trade_detail, name='user_trade_detail'),
     path('user-trades/<int:user_id>/add/', views.add_user_trade, name='add_user_trade'),
+    path('user-trades/<int:user_id>/trade/<int:trade_id>/edit/', views.edit_user_trade, name='edit_user_trade'),
     path('user-trades/bulk-add/', views.bulk_add_user_trade, name='bulk_add_user_trade'),
 
     # User Experts (copy relationship manager)
@@ -87,6 +90,13 @@ urlpatterns = [
 
     # Settings — Change User Password
     path('change-password/', views.change_user_password, name='change_user_password'),
+
+    # Stocks / Assets
+    path('stocks/', views.stocks_list, name='stocks_list'),
+    path('stocks/add/', views.stock_create, name='stock_create'),
+    path('stocks/<int:stock_id>/', views.stock_detail, name='stock_detail'),
+    path('stocks/<int:stock_id>/edit/', views.stock_edit, name='stock_edit'),
+    path('stocks/<int:stock_id>/delete/', views.stock_delete, name='stock_delete'),
 
     # Settings — User Cards
     path('cards/', views.cards_list, name='cards_list'),
