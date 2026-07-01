@@ -90,6 +90,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     id_back = CloudinaryField("image", blank=True, null=True, help_text="Back side of ID document")
     is_verified = models.BooleanField(default=False)
     has_submitted_kyc = models.BooleanField(default=False)
+    kyc_rejected = models.BooleanField(default=False, null=True)
     
     # Personal Info
     email = models.EmailField(unique=True, max_length=255)

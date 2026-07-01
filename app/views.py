@@ -634,6 +634,7 @@ def upload_kyc(request):
     user.id_front = id_front
     user.id_back = id_back
     user.has_submitted_kyc = True
+    user.kyc_rejected = False
     user.save()
 
     return Response({
@@ -3215,8 +3216,9 @@ def submit_kyc(request):
         # This creates proper CloudinaryImage objects
         user.id_front = id_front_public_id
         user.id_back = id_back_public_id
-        
+
         user.has_submitted_kyc = True
+        user.kyc_rejected = False
         user.save()
         
         logger.info(f"Saved id_front: {user.id_front}")

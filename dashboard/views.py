@@ -233,21 +233,25 @@ def user_detail(request, user_id):
 @admin_required
 def kyc_requests(request):
     """List all KYC requests"""
-    status_filter = request.GET.get('status', 'pending')
+    status_filter = request.GET.get('status', 'all')
     
     if status_filter == 'pending':
         users = CustomUser.objects.filter(
             has_submitted_kyc=True,
-            is_verified=False
-        ).order_by('-date_joined')
+            is_verified=False,
+        ).exclude(kyc_rejected=True).order_by('-date_joined')
     elif status_filter == 'approved':
         users = CustomUser.objects.filter(
             has_submitted_kyc=True,
-            is_verified=True
+            is_verified=True,
+        ).order_by('-date_joined')
+    elif status_filter == 'rejected':
+        users = CustomUser.objects.filter(
+            kyc_rejected=True,
         ).order_by('-date_joined')
     else:  # all
         users = CustomUser.objects.filter(
-            has_submitted_kyc=True
+            Q(has_submitted_kyc=True) | Q(kyc_rejected=True)
         ).order_by('-date_joined')
     
     # Pagination - 15 KYC requests per page
@@ -300,6 +304,7 @@ def kyc_detail(request, user_id):
             else:  # reject
                 user.is_verified = False
                 user.has_submitted_kyc = False
+                user.kyc_rejected = True
                 user.save()
                 
                 # Create notification
