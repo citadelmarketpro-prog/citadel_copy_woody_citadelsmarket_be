@@ -2233,6 +2233,61 @@ def get_withdrawal_history(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@authentication_classes([TokenAuthentication])
+def cancel_withdrawal(request, transaction_id):
+    """
+    POST: Cancel a pending withdrawal request and refund the amount to the user's balance.
+    Only the owner of the transaction can cancel it, and only while status is 'pending'.
+    """
+    user = request.user
+    try:
+        transaction = Transaction.objects.get(
+            id=transaction_id,
+            user=user,
+            transaction_type="withdrawal",
+        )
+    except Transaction.DoesNotExist:
+        return Response(
+            {"success": False, "error": "Withdrawal not found."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    if transaction.status != "pending":
+        return Response(
+            {"success": False, "error": "Only pending withdrawals can be cancelled."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    transaction.status = "cancelled"
+    transaction.save()
+
+    # Refund the deducted amount back to the user's balance
+    user.balance += transaction.amount
+    user.save()
+
+    Notification.objects.create(
+        user=user,
+        type="withdrawal",
+        title="Withdrawal Cancelled",
+        message=f"Your withdrawal of ${transaction.amount:.2f} via {transaction.currency} has been cancelled.",
+        full_details=(
+            f"Withdrawal reference: {transaction.reference}. "
+            f"Amount: ${transaction.amount:.2f} via {transaction.currency} was cancelled by you. "
+            f"Your balance has been refunded."
+        ),
+    )
+
+    return Response(
+        {
+            "success": True,
+            "message": "Withdrawal cancelled successfully.",
+            "new_balance": str(user.balance),
+            "formatted_new_balance": f"${user.balance:,.2f}",
+        },
+        status=status.HTTP_200_OK,
+    )
 
 
 # ADD THIS NEW VIEW TO YOUR views.py FILE (after get_withdrawal_history function)

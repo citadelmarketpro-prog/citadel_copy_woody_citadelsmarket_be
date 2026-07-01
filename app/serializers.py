@@ -318,7 +318,7 @@ class TraderDetailSerializer(serializers.ModelSerializer):
             # Related
             'portfolios',
             # Metadata
-            'is_active', 'created_at', 'updated_at'
+            'profit_share', 'is_active', 'created_at', 'updated_at'
         ]
     
     def get_avatar_url(self, obj):

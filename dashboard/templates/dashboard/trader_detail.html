@@ -184,7 +184,11 @@
                     <span class="text-gray-600">Rating:</span>
                     <span class="font-bold text-yellow-600">{{ trader.expert_rating }}/5.00</span>
                 </div>
-                
+                <div class="flex justify-between border-b pb-2">
+                    <span class="text-gray-600">Profit Share:</span>
+                    <span class="font-bold text-amber-600">{{ trader.profit_share }}%</span>
+                </div>
+
                 {% if trader.return_ytd %}
                 <div class="flex justify-between border-b pb-2">
                     <span class="text-gray-600">Return YTD:</span>

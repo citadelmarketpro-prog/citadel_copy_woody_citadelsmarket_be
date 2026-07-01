@@ -548,6 +548,12 @@ class AddTraderForm(forms.Form):
         widget=forms.NumberInput(attrs={'class': _i, 'placeholder': '150', 'min': '0'})
     )
 
+    # --- Profit Share ---
+    profit_share = forms.IntegerField(
+        label="Profit Share %", required=False, initial=50,
+        widget=forms.NumberInput(attrs={'class': _i, 'placeholder': '50', 'min': '0', 'max': '100'})
+    )
+
     # --- Status ---
     is_active = forms.BooleanField(
         label="Active (Available for Copying)", required=False, initial=True,

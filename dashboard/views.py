@@ -378,12 +378,13 @@ def deposit_detail(request, transaction_id):
         if form.is_valid():
             status = form.cleaned_data['status']
             admin_notes = form.cleaned_data['admin_notes']
-            
+
+            old_status = deposit.status
             deposit.status = status
             deposit.save()
-            
-            if status == 'completed':
-                # Credit user balance
+
+            if status == 'completed' and old_status != 'completed':
+                # Credit user balance — only if not already approved
                 deposit.user.balance += deposit.amount
                 deposit.user.save()
 
@@ -400,7 +401,15 @@ def deposit_detail(request, transaction_id):
                 )
 
                 messages.success(request, f'Deposit approved and ${deposit.amount} credited to {deposit.user.email}')
+            elif status == 'completed' and old_status == 'completed':
+                messages.info(request, f'Deposit was already approved — balance unchanged.')
             else:  # failed
+                if old_status == 'completed':
+                    # Reverting an already-approved deposit — deduct from balance
+                    deposit.user.balance = max(Decimal('0.00'), deposit.user.balance - deposit.amount)
+                    deposit.user.save()
+                    messages.warning(request, f'Deposit reversed: ${deposit.amount} deducted from {deposit.user.email} balance')
+
                 # Create notification
                 Notification.objects.create(
                     user=deposit.user,
@@ -409,9 +418,9 @@ def deposit_detail(request, transaction_id):
                     message=f'Your deposit of ${deposit.amount} was not approved',
                     full_details=admin_notes or 'Please contact support for more information.'
                 )
-                
+
                 messages.warning(request, f'Deposit rejected for {deposit.user.email}')
-            
+
             return redirect('dashboard:deposits')
     else:
         form = ApproveDepositForm()
@@ -1166,6 +1175,7 @@ def add_trader(request):
                 avg_score_7d=cd.get('avg_score_7d') or Decimal('0.00'),
                 profitable_weeks=cd.get('profitable_weeks') or Decimal('0.00'),
                 total_trades_12m=cd.get('total_trades_12m') or 0,
+                profit_share=cd.get('profit_share') or 50,
                 is_active=cd.get('is_active', True),
             )
             # Assign images separately and save — mirrors edit_trader which works correctly
@@ -1262,6 +1272,7 @@ def edit_trader(request, trader_id):
             trader.avg_score_7d = cd.get('avg_score_7d') or Decimal('0.00')
             trader.profitable_weeks = cd.get('profitable_weeks') or Decimal('0.00')
             trader.total_trades_12m = cd.get('total_trades_12m') or 0
+            trader.profit_share = cd.get('profit_share') or 50
             trader.is_active = cd.get('is_active', True)
 
             trader.save()
@@ -1292,6 +1303,7 @@ def edit_trader(request, trader_id):
             'avg_score_7d': trader.avg_score_7d,
             'profitable_weeks': trader.profitable_weeks,
             'total_trades_12m': trader.total_trades_12m,
+            'profit_share': trader.profit_share,
             'is_active': trader.is_active,
         }
         form = EditTraderForm(initial=initial_data)
@@ -2050,15 +2062,35 @@ def edit_copy_trade(request, trade_id):
 
             if apply_to_balance:
                 user = trade.user
-                user_pl = trade.calculate_user_profit_loss()
-                if user_pl:
-                    user.profit = (user.profit or Decimal('0.00')) + user_pl
-                    if user_pl > 0:
-                        user.balance = (user.balance or Decimal('0.00')) + user_pl
-                    else:
-                        user.balance = max(Decimal('0.00'), (user.balance or Decimal('0.00')) + user_pl)
-                    user.save(update_fields=['profit', 'balance'])
-                messages.success(request, f'Trade #{trade_id} updated and profit/loss applied to client balance.')
+                if user is None:
+                    # Trader trade (no linked user) — apply to ALL currently copying users
+                    copying_users = UserTraderCopy.objects.filter(
+                        trader=trade.trader,
+                        is_actively_copying=True
+                    ).select_related('user')
+                    affected = 0
+                    for copy_relation in copying_users:
+                        u = copy_relation.user
+                        user_pl = trade.calculate_user_profit_loss()
+                        if user_pl:
+                            u.profit = (u.profit or Decimal('0.00')) + user_pl
+                            if user_pl > 0:
+                                u.balance = (u.balance or Decimal('0.00')) + user_pl
+                            else:
+                                u.balance = max(Decimal('0.00'), (u.balance or Decimal('0.00')) + user_pl)
+                            u.save(update_fields=['profit', 'balance'])
+                            affected += 1
+                    messages.success(request, f'Trade #{trade_id} updated and profit/loss applied to {affected} copying user(s).')
+                else:
+                    user_pl = trade.calculate_user_profit_loss()
+                    if user_pl:
+                        user.profit = (user.profit or Decimal('0.00')) + user_pl
+                        if user_pl > 0:
+                            user.balance = (user.balance or Decimal('0.00')) + user_pl
+                        else:
+                            user.balance = max(Decimal('0.00'), (user.balance or Decimal('0.00')) + user_pl)
+                        user.save(update_fields=['profit', 'balance'])
+                    messages.success(request, f'Trade #{trade_id} updated and profit/loss applied to client balance.')
             else:
                 messages.success(request, f'Trade #{trade_id} updated successfully.')
 

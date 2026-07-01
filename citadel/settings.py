@@ -179,6 +179,7 @@ CSRF_TRUSTED_ORIGINS = [
 # ----------------------------
 # SESSION
 # ----------------------------
+SESSION_COOKIE_NAME = 'citadelsmarket_session'
 SESSION_COOKIE_AGE = 86400 * 30        # 30 days
 SESSION_SAVE_EVERY_REQUEST = True       # reset expiry on each request
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False

@@ -518,6 +518,11 @@ class Trader(models.Model):
         help_text="List of frequently traded assets"
     )
     
+    profit_share = models.PositiveSmallIntegerField(
+        default=50,
+        help_text="Percentage of profits shared with the trader (e.g. 50 means 50%)"
+    )
+
     # Metadata
     is_active = models.BooleanField(
         default=True,
