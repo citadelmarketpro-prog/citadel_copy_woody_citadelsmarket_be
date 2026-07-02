@@ -71,6 +71,7 @@
                         <th class="px-5 py-3">Win Rate</th>
                         <th class="px-5 py-3">Copiers</th>
                         <th class="px-5 py-3">Trades</th>
+                        <th class="px-5 py-3">Profit Share</th>
                         <th class="px-5 py-3">Status</th>
                         <th class="px-5 py-3">Actions</th>
                     </tr>
@@ -100,6 +101,7 @@
                         <td class="px-5 py-3">{{ t.win_rate|floatformat:1 }}%</td>
                         <td class="px-5 py-3">{{ t.copiers }}</td>
                         <td class="px-5 py-3">{{ t.trades }}</td>
+                        <td class="px-5 py-3 font-semibold text-amber-600">{{ t.profit_share|default:50 }}%</td>
                         <td class="px-5 py-3">
                             {% if t.is_active %}<span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span><span class="text-xs text-emerald-600 ml-1">Active</span>
                             {% else %}<span class="w-2 h-2 rounded-full bg-gray-300 inline-block"></span><span class="text-xs text-gray-400 ml-1">Inactive</span>{% endif %}
@@ -113,7 +115,7 @@
                     </tr>
                     {% endfor %}
                     <tr id="no-results-row" class="hidden">
-                        <td colspan="9" class="px-5 py-12 text-center text-gray-400">
+                        <td colspan="10" class="px-5 py-12 text-center text-gray-400">
                             <i class="fas fa-search text-2xl mb-2 block"></i>
                             No traders match your filters.
                         </td>
@@ -212,6 +214,15 @@
                             class="w-full pr-10 pl-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                         <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
                     </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Profit Share (add points)</label>
+                    <div class="relative">
+                        <input type="number" name="profit_share_add" value="0" step="1" min="-100" max="100"
+                            class="w-full pr-12 pl-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">pts</span>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">Added directly to current profit share (result clamped 0–100).</p>
                 </div>
             </div>
         </div>
@@ -397,7 +408,7 @@ function submitBulkForm() {
     });
 
     ['gain_pct', 'return_ytd_pct', 'return_2y_pct', 'win_rate_pct', 'trades_pct',
-     'copiers_pct', 'subscribers_pct', 'min_capital_pct'].forEach(name => {
+     'copiers_pct', 'subscribers_pct', 'min_capital_pct', 'profit_share_add'].forEach(name => {
         form.querySelectorAll(`input[name="${name}"]`).forEach(el => el.remove());
         const modalInput = document.querySelector(`#stats-modal input[name="${name}"]`);
         if (modalInput) {

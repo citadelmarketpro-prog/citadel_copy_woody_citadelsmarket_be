@@ -1081,14 +1081,21 @@ def bulk_update_trader_stats(request):
         except Exception:
             return Decimal('0')
 
-    gain_pct        = get_pct('gain_pct')
-    return_ytd_pct  = get_pct('return_ytd_pct')
-    return_2y_pct   = get_pct('return_2y_pct')
-    win_rate_pct    = get_pct('win_rate_pct')
-    trades_pct      = get_pct('trades_pct')
-    copiers_pct     = get_pct('copiers_pct')
-    subscribers_pct = get_pct('subscribers_pct')
-    min_capital_pct = get_pct('min_capital_pct')
+    def get_int(key):
+        try:
+            return int(request.POST.get(key, '0') or '0')
+        except Exception:
+            return 0
+
+    gain_pct         = get_pct('gain_pct')
+    return_ytd_pct   = get_pct('return_ytd_pct')
+    return_2y_pct    = get_pct('return_2y_pct')
+    win_rate_pct     = get_pct('win_rate_pct')
+    trades_pct       = get_pct('trades_pct')
+    copiers_pct      = get_pct('copiers_pct')
+    subscribers_pct  = get_pct('subscribers_pct')
+    min_capital_pct  = get_pct('min_capital_pct')
+    profit_share_add = get_int('profit_share_add')
 
     traders = list(Trader.objects.filter(id__in=trader_ids))
     fields_to_update = []
@@ -1115,15 +1122,18 @@ def bulk_update_trader_stats(request):
             trader.subscribers = round((trader.subscribers or 0) * float(1 + subscribers_pct / 100))
         if min_capital_pct:
             trader.min_account_threshold = (trader.min_account_threshold or Decimal('0')) * (1 + min_capital_pct / 100)
+        if profit_share_add:
+            trader.profit_share = min(100, max(0, (trader.profit_share or 50) + profit_share_add))
 
-    if gain_pct:        fields_to_update.append('gain')
-    if return_ytd_pct:  fields_to_update.append('return_ytd')
-    if return_2y_pct:   fields_to_update.append('return_2y')
-    if win_rate_pct:    fields_to_update.extend(['total_wins', 'total_losses'])
-    if trades_pct:      fields_to_update.append('trades')
-    if copiers_pct:     fields_to_update.append('copiers')
-    if subscribers_pct: fields_to_update.append('subscribers')
-    if min_capital_pct: fields_to_update.append('min_account_threshold')
+    if gain_pct:          fields_to_update.append('gain')
+    if return_ytd_pct:    fields_to_update.append('return_ytd')
+    if return_2y_pct:     fields_to_update.append('return_2y')
+    if win_rate_pct:      fields_to_update.extend(['total_wins', 'total_losses'])
+    if trades_pct:        fields_to_update.append('trades')
+    if copiers_pct:       fields_to_update.append('copiers')
+    if subscribers_pct:   fields_to_update.append('subscribers')
+    if min_capital_pct:   fields_to_update.append('min_account_threshold')
+    if profit_share_add:  fields_to_update.append('profit_share')
 
     if traders and fields_to_update:
         try:
@@ -1138,7 +1148,7 @@ def bulk_update_trader_stats(request):
             return redirect('dashboard:traders_list')
         messages.success(request, f'Stats updated for {len(traders)} trader(s).')
     else:
-        messages.warning(request, 'No changes applied — all percentage fields were 0%.')
+        messages.warning(request, 'No changes applied — all fields were 0.')
 
     return redirect('dashboard:traders_list')
 
