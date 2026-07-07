@@ -5,61 +5,109 @@ from decimal import Decimal
 from django.utils.safestring import mark_safe
 
 
-def _build_market_choices():
-    """Build market choices from DB assets, stocks, and the hardcoded fallback list."""
-    from app.models import Asset
-    choices = [('', '— Select Market / Asset —')]
-    seen = set()
-
-    # Assets already in the database (grouped by category for clarity)
-    for a in Asset.objects.all().order_by('category', 'symbol').values('symbol', 'category'):
-        sym = a['symbol']
-        if sym and sym not in seen:
-            choices.append((sym, f"{sym}  [{a['category']}]"))
-            seen.add(sym)
-
-    # Active stocks in the database
-    for s in Stock.objects.filter(is_active=True).order_by('symbol').values('symbol', 'name'):
-        sym = s['symbol']
-        if sym and sym not in seen:
-            choices.append((sym, f"{sym} — {s['name']}"))
-            seen.add(sym)
-
-    # Hardcoded fallbacks (any symbol not already listed above)
-    for sym, label in UserCopyTraderHistory.MARKET_CHOICES:
-        if sym not in seen:
-            choices.append((sym, label))
-            seen.add(sym)
-
-    return choices
-
-
-class FilterableMarketSelectWidget(forms.Select):
-    """Standard <select> with a live text-filter input above it."""
+class FmpComboboxWidget(forms.Widget):
+    """
+    Combobox: type to search FMP live, pick a result from the dropdown.
+    Submits just the symbol string as the field value.
+    """
 
     def render(self, name, value, attrs=None, renderer=None):
+        from django.utils.html import escape
         attrs = attrs or {}
         field_id = attrs.get('id', f'id_{name}')
-        html = super().render(name, value, attrs, renderer)
-        filter_html = f"""
-<input type="text" id="filter-{field_id}"
-       placeholder="Search assets (e.g. AAPL, EURUSD, BTC)..."
-       autocomplete="off"
-       style="width:100%;padding:6px 10px;margin-bottom:4px;border:1px solid #d1d5db;border-radius:6px;font-size:14px;box-sizing:border-box;">
+        css_class = attrs.get('class', '')
+        current = escape(value or '')
+
+        html = f"""
+<div style="position:relative;width:100%;">
+  <input type="text"
+         id="fmp-disp-{field_id}"
+         value="{current}"
+         placeholder="Type to search (e.g. AAPL, EURUSD, BTCUSD)..."
+         autocomplete="off"
+         class="{css_class}"
+         style="width:100%;box-sizing:border-box;">
+  <input type="hidden" name="{name}" id="{field_id}" value="{current}">
+  <div id="fmp-drop-{field_id}"
+       style="display:none;position:absolute;z-index:9999;left:0;right:0;
+              max-height:260px;overflow-y:auto;background:#fff;
+              border:1px solid #d1d5db;border-radius:6px;
+              box-shadow:0 4px 16px rgba(0,0,0,.12);margin-top:2px;"></div>
+</div>
 <script>
 (function(){{
-  var f = document.getElementById('filter-{field_id}');
-  var s = document.getElementById('{field_id}');
-  if (!f || !s) return;
-  f.addEventListener('input', function(){{
-    var q = f.value.toLowerCase();
-    Array.from(s.options).forEach(function(o){{
-      o.style.display = (o.value === '' || (o.text + ' ' + o.value).toLowerCase().includes(q)) ? '' : 'none';
-    }});
+  var disp    = document.getElementById('fmp-disp-{field_id}');
+  var hidden  = document.getElementById('{field_id}');
+  var drop    = document.getElementById('fmp-drop-{field_id}');
+  if (!disp || !hidden || !drop) return;
+
+  var tm, picking = false;
+
+  disp.addEventListener('input', function(){{
+    hidden.value = disp.value.trim();
+    clearTimeout(tm);
+    var q = disp.value.trim();
+    if (!q) {{ drop.style.display = 'none'; return; }}
+    tm = setTimeout(function(){{ search(q); }}, 300);
   }});
+
+  disp.addEventListener('focus', function(){{
+    var q = disp.value.trim();
+    if (q) search(q);
+  }});
+
+  disp.addEventListener('blur', function(){{
+    setTimeout(function(){{ if (!picking) drop.style.display = 'none'; }}, 180);
+  }});
+
+  function search(q) {{
+    fetch('/dashboard/api/fmp-search/?q=' + encodeURIComponent(q))
+      .then(function(r) {{ return r.json(); }})
+      .then(function(items) {{
+        drop.innerHTML = '';
+        if (!Array.isArray(items) || !items.length) {{
+          drop.style.display = 'none'; return;
+        }}
+        items.forEach(function(it) {{
+          if (!it.symbol) return;
+          var row = document.createElement('div');
+          row.style.cssText = 'padding:9px 14px;cursor:pointer;font-size:14px;' +
+                              'border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:10px;';
+          var logo = document.createElement('img');
+          logo.src = 'https://financialmodelingprep.com/image-stock/' + it.symbol + '.png';
+          logo.style.cssText = 'width:28px;height:28px;object-fit:contain;flex-shrink:0;';
+          logo.onerror = function() {{ logo.style.display = 'none'; }};
+          var label = document.createElement('span');
+          label.innerHTML = '<strong>' + it.symbol + '</strong>' +
+            (it.name ? ' <span style="color:#6b7280;font-size:13px;">— ' + it.name + '</span>' : '');
+          row.appendChild(logo);
+          row.appendChild(label);
+          row.addEventListener('mouseenter', function() {{
+            row.style.background = '#f0f9ff'; picking = true;
+          }});
+          row.addEventListener('mouseleave', function() {{
+            row.style.background = ''; picking = false;
+          }});
+          row.addEventListener('mousedown', function(e) {{
+            e.preventDefault();
+            hidden.value = it.symbol;
+            disp.value  = it.symbol;
+            drop.style.display = 'none';
+            picking = false;
+            disp.focus();
+          }});
+          drop.appendChild(row);
+        }});
+        drop.style.display = 'block';
+      }})
+      .catch(function() {{ drop.style.display = 'none'; }});
+  }}
 }})();
 </script>"""
-        return mark_safe(filter_html + html)
+        return mark_safe(html)
+
+    def value_from_datadict(self, data, files, name):
+        return data.get(name, '')
 
 
 class FmpStockSymbolWidget(forms.TextInput):
@@ -383,19 +431,15 @@ class AddCopyTradeForm(forms.Form):
         empty_label="Select Trader"
     )
     
-    # Market selection
-    market = forms.ChoiceField(
-        choices=[],
+    # Market selection — FMP combobox
+    market = forms.CharField(
         label="Market / Asset",
-        widget=FilterableMarketSelectWidget(attrs={
+        max_length=50,
+        widget=FmpComboboxWidget(attrs={
             'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
         }),
     )
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['market'].choices = _build_market_choices()
-    
     # Direction
     direction = forms.ChoiceField(
         choices=[('', 'Select Direction')] + list(UserCopyTraderHistory.DIRECTION_CHOICES),
@@ -784,10 +828,10 @@ class AddUserDirectTradeForm(forms.Form):
     _select = _input
     _textarea = _input
 
-    market = forms.ChoiceField(
-        choices=[],
+    market = forms.CharField(
         label="Market / Asset",
-        widget=FilterableMarketSelectWidget(attrs={'class': _select}),
+        max_length=50,
+        widget=FmpComboboxWidget(attrs={'class': _select}),
     )
 
     DIRECTION_CHOICES = [('', 'Select Direction'), ('buy', 'Buy'), ('sell', 'Sell')]
@@ -852,10 +896,6 @@ class AddUserDirectTradeForm(forms.Form):
         required=False,
         widget=forms.Textarea(attrs={'class': _textarea, 'rows': 3, 'placeholder': 'Additional notes...'}),
     )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['market'].choices = _build_market_choices()
 
 # ---------------------------------------------------------------------------
 # Admin Wallet Form
@@ -944,10 +984,10 @@ _f = 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring
 class EditCopyTradeForm(forms.Form):
     """Form for editing an existing copy trade record"""
 
-    market = forms.ChoiceField(
-        choices=[],
+    market = forms.CharField(
         label="Market / Asset",
-        widget=FilterableMarketSelectWidget(attrs={'class': _f}),
+        max_length=50,
+        widget=FmpComboboxWidget(attrs={'class': _f}),
     )
     direction = forms.ChoiceField(
         choices=[('', 'Select Direction')] + list(UserCopyTraderHistory.DIRECTION_CHOICES),
@@ -998,10 +1038,6 @@ class EditCopyTradeForm(forms.Form):
         label="Notes (Optional)", required=False,
         widget=forms.Textarea(attrs={'class': _f, 'rows': 3}),
     )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['market'].choices = _build_market_choices()
 
 
 # ===== User Edit Form =====
