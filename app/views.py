@@ -2381,7 +2381,7 @@ def stock_list(request):
         q = quote_map.get(stock.symbol.upper(), {})
         price      = float(q.get("price") or 0)
         change     = float(q.get("change") or 0)
-        change_pct = float(q.get("changesPercentage") or 0)
+        change_pct = float(q.get("changePercentage") or q.get("changesPercentage") or 0)
 
         logo_url = (
             stock.image.url

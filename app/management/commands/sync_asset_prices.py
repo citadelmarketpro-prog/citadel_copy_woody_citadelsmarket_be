@@ -46,9 +46,9 @@ class Command(BaseCommand):
             price      = float(quote.get("price") or 0)
             bid        = float(quote.get("bid") or 0) or round(price * 0.9999, 6)
             ask        = float(quote.get("ask") or 0) or round(price * 1.0001, 6)
-            day_low    = float(quote.get("dayLow")  or price)
-            day_high   = float(quote.get("dayHigh") or price)
-            change_pct = float(quote.get("changesPercentage") or 0)
+            day_low    = float(quote.get("dayLow") or quote.get("low") or price)
+            day_high   = float(quote.get("dayHigh") or quote.get("high") or price)
+            change_pct = float(quote.get("changePercentage") or quote.get("changesPercentage") or 0)
 
             ts = quote.get("timestamp")
             try:

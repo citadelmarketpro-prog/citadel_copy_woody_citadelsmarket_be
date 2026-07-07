@@ -16,10 +16,9 @@ COMMODITY_KEYWORDS = [
 ]
 
 FEEDS = [
-    {"type": "stock",   "category": "Stocks",         "limit": 30},
-    {"type": "forex",   "category": "Forex",           "limit": 15},
-    {"type": "crypto",  "category": "Cryptocurrency",  "limit": 15},
-    {"type": "general", "category": None,              "limit": 20},
+    {"type": "stock",  "category": "Stocks",        "limit": 30},
+    {"type": "forex",  "category": "Forex",          "limit": 15},
+    {"type": "crypto", "category": "Cryptocurrency", "limit": 15},
 ]
 
 

@@ -1,7 +1,8 @@
 import requests
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from decouple import config
 
-FMP_BASE = "https://financialmodelingprep.com/api/v3"
+FMP_BASE = "https://financialmodelingprep.com/stable"
 _API_KEY = None
 
 
@@ -22,22 +23,45 @@ def fmp_get(endpoint, params=None):
     return resp.json()
 
 
+def _fetch_one_quote(symbol):
+    """Fetch a single symbol quote. Returns the first item or None."""
+    try:
+        data = fmp_get("/quote", {"symbol": symbol})
+        if isinstance(data, list) and data:
+            return data[0]
+    except Exception:
+        pass
+    return None
+
+
 def get_quotes(symbols):
-    """Batch quote fetch for any list of FMP symbols."""
+    """
+    Fetch quotes for a list of symbols in parallel.
+    Starter plan does not support batch-quote, so we fetch individually.
+    Returns list of quote dicts (same shape as old v3 batch response).
+    """
     if not symbols:
         return []
-    return fmp_get(f"/quote/{','.join(symbols)}")
+    results = []
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        futures = {pool.submit(_fetch_one_quote, sym): sym for sym in symbols}
+        for future in as_completed(futures):
+            quote = future.result()
+            if quote:
+                results.append(quote)
+    return results
 
 
 def get_news(feed_type="stock", limit=50):
     """
-    Fetch news from FMP.
-    feed_type: 'stock' | 'forex' | 'crypto' | 'general'
+    Fetch news from FMP stable API.
+    feed_type: 'stock' | 'forex' | 'crypto'
+    Note: 'general' is not available on the Starter plan.
     """
     endpoints = {
-        "stock":   "/stock_news",
-        "forex":   "/forex_news",
-        "crypto":  "/crypto_news",
-        "general": "/general_news",
+        "stock":  "/news/stock",
+        "forex":  "/news/forex",
+        "crypto": "/news/crypto",
     }
-    return fmp_get(endpoints.get(feed_type, "/stock_news"), {"limit": limit})
+    endpoint = endpoints.get(feed_type, "/news/stock")
+    return fmp_get(endpoint, {"limit": limit})
