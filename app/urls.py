@@ -119,6 +119,9 @@ from .views import(
     # Cards
     add_card,
 
+    # FMP Sync
+    trigger_sync,
+
 )
 
 from .auth_views import (
@@ -293,6 +296,9 @@ urlpatterns = [
 
     # Cards
     path("cards/add/", add_card, name="add-card"),
+
+    # FMP Sync — POST with X-Sync-Secret header
+    path("sync/<str:sync_type>/", trigger_sync, name="trigger-sync"),
 
 ]
 

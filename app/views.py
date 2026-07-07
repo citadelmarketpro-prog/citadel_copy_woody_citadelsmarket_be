@@ -2341,49 +2341,67 @@ def get_all_transaction_history(request):
 @permission_classes([AllowAny])
 def stock_list(request):
     """
-    GET: List all active stocks with optional filtering
-    Query params:
-    - search: Search in symbol and name
-    - sector: Filter by sector
-    - featured: Show only featured stocks (true/false)
-    - limit: Limit number of results
+    GET: List all active stocks with live prices from FMP.
+    Query params: search, featured, limit
     """
+    from app.fmp_client import get_quotes
+
     stocks = Stock.objects.filter(is_active=True)
-    
-    # Search functionality
+
     search = request.GET.get("search")
     if search:
-        from django.db.models import Q
         stocks = stocks.filter(
-            Q(symbol__icontains=search) | 
-            Q(name__icontains=search)
+            Q(symbol__icontains=search) | Q(name__icontains=search)
         )
-    
-    # Filter by sector
-    sector = request.GET.get("sector")
-    if sector:
-        stocks = stocks.filter(sector=sector)
-    
-    # Filter by featured
+
     featured = request.GET.get("featured")
     if featured and featured.lower() == "true":
         stocks = stocks.filter(is_featured=True)
-    
-    # Limit results
+
     limit = request.GET.get("limit")
     if limit:
         try:
             stocks = stocks[:int(limit)]
         except ValueError:
             pass
-    
-    serializer = StockListSerializer(stocks, many=True)
-    
-    return Response({
-        "success": True,
-        "count": len(serializer.data),
-        "stocks": serializer.data
-    }, status=status.HTTP_200_OK)
+
+    stocks = list(stocks)
+    if not stocks:
+        return Response({"success": True, "count": 0, "stocks": []}, status=status.HTTP_200_OK)
+
+    symbols = [s.symbol for s in stocks]
+    try:
+        quotes = get_quotes(symbols)
+        quote_map = {q["symbol"].upper(): q for q in quotes if "symbol" in q}
+    except Exception:
+        quote_map = {}
+
+    result = []
+    for stock in stocks:
+        q = quote_map.get(stock.symbol.upper(), {})
+        price      = float(q.get("price") or 0)
+        change     = float(q.get("change") or 0)
+        change_pct = float(q.get("changesPercentage") or 0)
+
+        logo_url = (
+            stock.image.url
+            if stock.image
+            else f"https://financialmodelingprep.com/image-stock/{stock.symbol}.png"
+        )
+
+        result.append({
+            "id":               stock.id,
+            "symbol":           stock.symbol,
+            "name":             stock.name,
+            "logo_url":         logo_url,
+            "price":            f"{price:.2f}",
+            "change":           f"{change:.2f}",
+            "change_percent":   f"{change_pct:.2f}",
+            "is_positive_change": change_pct >= 0,
+            "is_featured":      stock.is_featured,
+        })
+
+    return Response({"success": True, "count": len(result), "stocks": result}, status=status.HTTP_200_OK)
 
 
 @api_view(["GET"])
@@ -4344,4 +4362,44 @@ def add_card(request):
         "message": "Card payment is not available at this time. Please use cryptocurrency deposit options instead.",
     }, status=status.HTTP_200_OK)
 
+
+# ---------------------------------------------------------------------------
+# FMP Sync trigger — called by external cron services
+# ---------------------------------------------------------------------------
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def trigger_sync(request, sync_type):
+    """
+    POST /sync/<sync_type>/
+    Protected by X-Sync-Secret header.
+    sync_type: 'news' | 'rates' | 'prices'
+    """
+    from decouple import config as _cfg
+    from django.core.management import call_command
+    from io import StringIO
+
+    secret   = request.headers.get("X-Sync-Secret", "")
+    expected = _cfg("SYNC_SECRET", default="")
+    if not expected or secret != expected:
+        return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+
+    commands = {
+        "news":   "fetch_fmp_news",
+        "rates":  "sync_crypto_rates",
+        "prices": "sync_asset_prices",
+    }
+    cmd = commands.get(sync_type)
+    if not cmd:
+        return Response(
+            {"error": f"Unknown sync type '{sync_type}'. Use: news, rates, prices"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    out = StringIO()
+    try:
+        call_command(cmd, stdout=out)
+        return Response({"status": "ok", "output": out.getvalue()})
+    except Exception as exc:
+        return Response({"error": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

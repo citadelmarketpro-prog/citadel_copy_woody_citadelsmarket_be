@@ -228,8 +228,9 @@ class NewsSerializer(serializers.ModelSerializer):
         ]
 
     def get_image_url(self, obj):
-        # Return Cloudinary image URL
-        return obj.image.url if obj.image else None
+        if obj.image:
+            return obj.image.url
+        return obj.external_image_url or None
     
 
 

@@ -1262,6 +1262,16 @@ class News(models.Model):
         default=False,
         help_text="Mark as featured article"
     )
+    external_image_url = models.URLField(
+        blank=True,
+        default="",
+        help_text="Image URL from external source (e.g. FMP). Used when no Cloudinary image is uploaded."
+    )
+    source_url = models.URLField(
+        blank=True,
+        default="",
+        help_text="Original article URL. Used for deduplication when syncing from FMP."
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
