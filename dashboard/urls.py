@@ -59,6 +59,7 @@ urlpatterns = [
     
     # API endpoints
     path('api/assets-by-type/', views.get_assets_by_type, name='get_assets_by_type'),
+    path('api/fmp-search/', views.fmp_symbol_search, name='fmp_symbol_search'),
 
 
     # Investors Management

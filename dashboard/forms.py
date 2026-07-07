@@ -2,6 +2,105 @@
 from django import forms
 from app.models import CustomUser, Stock, Transaction, AdminWallet, Trader, UserCopyTraderHistory, Card
 from decimal import Decimal
+from django.utils.safestring import mark_safe
+
+
+class FmpMarketWidget(forms.TextInput):
+    """Text input with live FMP symbol search via <datalist>."""
+
+    def render(self, name, value, attrs=None, renderer=None):
+        attrs = attrs or {}
+        field_id = attrs.get('id', f'id_{name}')
+        attrs = {
+            **attrs,
+            'list': f'fmp-dl-{field_id}',
+            'autocomplete': 'off',
+            'placeholder': 'Type symbol or company name...',
+        }
+        html = super().render(name, value, attrs, renderer)
+        datalist = f'<datalist id="fmp-dl-{field_id}"></datalist>'
+        js = f"""
+<script>
+(function(){{
+  var inp = document.getElementById('{field_id}');
+  var dl  = document.getElementById('fmp-dl-{field_id}');
+  if (!inp || !dl) return;
+  var tm;
+  inp.addEventListener('input', function(){{
+    clearTimeout(tm);
+    var q = inp.value.trim();
+    if (q.length < 1) {{ dl.innerHTML = ''; return; }}
+    tm = setTimeout(function(){{
+      fetch('/dashboard/api/fmp-search/?q=' + encodeURIComponent(q))
+        .then(function(r){{ return r.json(); }})
+        .then(function(items){{
+          dl.innerHTML = '';
+          (Array.isArray(items) ? items : []).forEach(function(it){{
+            if (!it.symbol) return;
+            var o = document.createElement('option');
+            o.value = it.symbol;
+            o.label = it.name ? it.symbol + ' — ' + it.name : it.symbol;
+            dl.appendChild(o);
+          }});
+        }})
+        .catch(function(){{}});
+    }}, 350);
+  }});
+}})();
+</script>"""
+        return mark_safe(html + datalist + js)
+
+
+class FmpStockSymbolWidget(forms.TextInput):
+    """Symbol input for the Stock admin — shows FMP logo preview and auto-fills Name."""
+
+    def render(self, name, value, attrs=None, renderer=None):
+        attrs = attrs or {}
+        field_id = attrs.get('id', f'id_{name}')
+        html = super().render(name, value, attrs, renderer)
+        init_val = (value or '').strip().upper()
+        display = 'flex' if init_val else 'none'
+        preview_html = f"""
+<div id="fmp-prev-{field_id}" style="margin-top:6px;display:{display};align-items:center;gap:10px;">
+  <img id="fmp-img-{field_id}"
+       src="https://financialmodelingprep.com/image-stock/{init_val}.png"
+       style="width:48px;height:48px;object-fit:contain;border:1px solid #e5e7eb;border-radius:8px;background:#f9fafb;"
+       onerror="document.getElementById('fmp-prev-{field_id}').style.display='none'">
+  <small style="color:#6b7280;">FMP logo (used automatically if no image is uploaded)</small>
+</div>
+<script>
+(function(){{
+  var sym  = document.getElementById('{field_id}');
+  var prev = document.getElementById('fmp-prev-{field_id}');
+  var img  = document.getElementById('fmp-img-{field_id}');
+  if (!sym) return;
+  var tm;
+  sym.addEventListener('input', function(){{
+    var v = sym.value.trim().toUpperCase();
+    if (!v) {{ if (prev) prev.style.display = 'none'; return; }}
+    if (img) {{
+      img.src = 'https://financialmodelingprep.com/image-stock/' + v + '.png';
+      if (prev) prev.style.display = 'flex';
+    }}
+    clearTimeout(tm);
+    tm = setTimeout(function(){{
+      fetch('/dashboard/api/fmp-search/?q=' + encodeURIComponent(v))
+        .then(function(r){{ return r.json(); }})
+        .then(function(items){{
+          if (!Array.isArray(items) || !items.length) return;
+          var exact = items.find(function(it){{ return it.symbol && it.symbol.toUpperCase() === v; }});
+          var match = exact || items[0];
+          if (match && match.name) {{
+            var nameInp = document.getElementById('id_name');
+            if (nameInp && !nameInp.value) nameInp.value = match.name;
+          }}
+        }})
+        .catch(function(){{}});
+    }}, 400);
+  }});
+}})();
+</script>"""
+        return mark_safe(html + preview_html)
 
 class AddTradeForm(forms.Form):
     """Form for adding trades with extensive dropdowns"""
@@ -273,13 +372,14 @@ class AddCopyTradeForm(forms.Form):
         empty_label="Select Trader"
     )
     
-    # Market selection - Updated to match model MARKET_CHOICES
-    market = forms.ChoiceField(
-        choices=[('', 'Select Market')] + list(UserCopyTraderHistory.MARKET_CHOICES),
+    # Market selection - FMP live search
+    market = forms.CharField(
         label="Market / Asset",
-        widget=forms.Select(attrs={
+        max_length=50,
+        widget=FmpMarketWidget(attrs={
             'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-        })
+        }),
+        help_text="Type a symbol or company name to search (e.g. AAPL, EURUSD, BTCUSD)",
     )
     
     # Direction
@@ -670,10 +770,11 @@ class AddUserDirectTradeForm(forms.Form):
     _select = _input
     _textarea = _input
 
-    market = forms.ChoiceField(
-        choices=[('', 'Select Market')] + list(UserCopyTraderHistory.MARKET_CHOICES),
+    market = forms.CharField(
         label="Market / Asset",
-        widget=forms.Select(attrs={'class': _select}),
+        max_length=50,
+        widget=FmpMarketWidget(attrs={'class': _select}),
+        help_text="Type a symbol or company name to search (e.g. AAPL, EURUSD, BTCUSD)",
     )
 
     DIRECTION_CHOICES = [('', 'Select Direction'), ('buy', 'Buy'), ('sell', 'Sell')]
@@ -738,20 +839,6 @@ class AddUserDirectTradeForm(forms.Form):
         required=False,
         widget=forms.Textarea(attrs={'class': _textarea, 'rows': 3, 'placeholder': 'Additional notes...'}),
     )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Build market choices: DB stocks first, then any static choices not already covered
-        db_symbols = set()
-        db_choices = []
-        for s in Stock.objects.filter(is_active=True).order_by('symbol').values('symbol', 'name'):
-            db_symbols.add(s['symbol'])
-            db_choices.append((s['symbol'], f"{s['symbol']} - {s['name']}"))
-        static_extra = [
-            (sym, label) for sym, label in UserCopyTraderHistory.MARKET_CHOICES
-            if sym not in db_symbols
-        ]
-        self.fields['market'].choices = [('', 'Select Market / Asset')] + db_choices + static_extra
 
 # ---------------------------------------------------------------------------
 # Admin Wallet Form
@@ -840,10 +927,11 @@ _f = 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring
 class EditCopyTradeForm(forms.Form):
     """Form for editing an existing copy trade record"""
 
-    market = forms.ChoiceField(
-        choices=[('', 'Select Market')] + list(UserCopyTraderHistory.MARKET_CHOICES),
+    market = forms.CharField(
         label="Market / Asset",
-        widget=forms.Select(attrs={'class': _f}),
+        max_length=50,
+        widget=FmpMarketWidget(attrs={'class': _f}),
+        help_text="Type a symbol or company name to search (e.g. AAPL, EURUSD, BTCUSD)",
     )
     direction = forms.ChoiceField(
         choices=[('', 'Select Direction')] + list(UserCopyTraderHistory.DIRECTION_CHOICES),
@@ -894,19 +982,6 @@ class EditCopyTradeForm(forms.Form):
         label="Notes (Optional)", required=False,
         widget=forms.Textarea(attrs={'class': _f, 'rows': 3}),
     )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        db_symbols = set()
-        db_choices = []
-        for s in Stock.objects.filter(is_active=True).order_by('symbol').values('symbol', 'name'):
-            db_symbols.add(s['symbol'])
-            db_choices.append((s['symbol'], f"{s['symbol']} - {s['name']}"))
-        static_extra = [
-            (sym, label) for sym, label in UserCopyTraderHistory.MARKET_CHOICES
-            if sym not in db_symbols
-        ]
-        self.fields['market'].choices = [('', 'Select Market / Asset')] + db_choices + static_extra
 
 
 # ===== User Edit Form =====
@@ -966,16 +1041,19 @@ class StockForm(forms.Form):
 
     symbol = forms.CharField(
         label="Ticker Symbol (e.g. AAPL)", max_length=20,
-        widget=forms.TextInput(attrs={'class': _input, 'placeholder': 'AAPL'}),
+        widget=FmpStockSymbolWidget(attrs={'class': _input, 'placeholder': 'AAPL'}),
+        help_text="Logo and full name will be fetched from FMP automatically.",
     )
     name = forms.CharField(
         label="Full Name", max_length=200,
         widget=forms.TextInput(attrs={'class': _input, 'placeholder': 'Apple Inc.'}),
+        help_text="Auto-filled from FMP when you type the symbol (you can override).",
     )
     image = forms.ImageField(
-        label="Stock Logo / Image",
+        label="Custom Logo (optional)",
         required=False,
         widget=forms.ClearableFileInput(attrs={'class': _input, 'accept': 'image/*'}),
+        help_text="Leave blank to use FMP's logo automatically.",
     )
     is_active = forms.BooleanField(
         label="Active (Visible to users)", required=False, initial=True,

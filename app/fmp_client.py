@@ -52,6 +52,20 @@ def get_quotes(symbols):
     return results
 
 
+def search_symbols(query, limit=15):
+    """Search FMP for symbols by ticker or company name. Returns [{symbol, name}]."""
+    try:
+        results = fmp_get("/search", {"query": query, "limit": limit})
+        if isinstance(results, list):
+            return [
+                {"symbol": r.get("symbol", ""), "name": r.get("name", "")}
+                for r in results if r.get("symbol")
+            ]
+    except Exception:
+        pass
+    return []
+
+
 def get_news(feed_type="stock", limit=50):
     """
     Fetch news from FMP stable API.
