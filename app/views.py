@@ -2356,13 +2356,9 @@ _CATEGORY_SYMBOLS = {
     'indices': [
         'SPX', 'NDX', 'DJI', 'RUT', 'VIX',
     ],
-    'forex': [
-        'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD',
-        'USDCAD', 'USDCHF', 'NZDUSD', 'EURGBP',
-    ],
 }
 
-_FEATURED_SYMBOLS = {'AAPL', 'MSFT', 'BTCUSD', 'ETHUSD', 'SPY', 'EURUSD'}
+_FEATURED_SYMBOLS = {'AAPL', 'MSFT', 'BTCUSD', 'ETHUSD', 'SPY'}
 
 _SYMBOL_TO_CATEGORY = {
     sym: cat
@@ -2377,9 +2373,6 @@ _SYMBOL_NAMES = {
     'LINKUSD': 'Chainlink', 'LTCUSD': 'Litecoin',
     'SPX': 'S&P 500', 'NDX': 'NASDAQ 100', 'DJI': 'Dow Jones',
     'RUT': 'Russell 2000', 'VIX': 'CBOE VIX',
-    'EURUSD': 'EUR/USD', 'GBPUSD': 'GBP/USD', 'USDJPY': 'USD/JPY',
-    'AUDUSD': 'AUD/USD', 'USDCAD': 'USD/CAD', 'USDCHF': 'USD/CHF',
-    'NZDUSD': 'NZD/USD', 'EURGBP': 'EUR/GBP',
 }
 
 _ALL_SYMBOLS = [sym for syms in _CATEGORY_SYMBOLS.values() for sym in syms]
