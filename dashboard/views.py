@@ -2511,6 +2511,7 @@ def stock_create(request):
                 stock = Stock.objects.create(
                     symbol=symbol,
                     name=cd['name'],
+                    category=cd.get('category', 'stock'),
                     is_active=cd.get('is_active', True),
                     is_featured=cd.get('is_featured', False),
                 )
@@ -2537,19 +2538,21 @@ def stock_edit(request, stock_id):
             else:
                 stock.symbol = new_symbol
                 stock.name = cd['name']
+                stock.category = cd.get('category', 'stock')
                 stock.is_active = cd.get('is_active', True)
                 stock.is_featured = cd.get('is_featured', False)
                 if cd.get('image'):
                     stock.image = cd['image']
-                    stock.save(update_fields=['symbol', 'name', 'is_active', 'is_featured', 'image'])
+                    stock.save(update_fields=['symbol', 'name', 'category', 'is_active', 'is_featured', 'image'])
                 else:
-                    stock.save(update_fields=['symbol', 'name', 'is_active', 'is_featured'])
+                    stock.save(update_fields=['symbol', 'name', 'category', 'is_active', 'is_featured'])
                 messages.success(request, f'Stock {stock.symbol} updated.')
                 return redirect('dashboard:stock_detail', stock_id=stock.id)
     else:
         form = StockForm(initial={
             'symbol': stock.symbol,
             'name': stock.name,
+            'category': stock.category,
             'is_active': stock.is_active,
             'is_featured': stock.is_featured,
         })

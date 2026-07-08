@@ -7,100 +7,183 @@ from django.utils.safestring import mark_safe
 
 class FmpComboboxWidget(forms.Widget):
     """
-    Combobox: type to search FMP live, pick a result from the dropdown.
+    Combobox: shows local assets instantly as you type, then enriches with
+    FMP search results if the endpoint is available on this plan.
     Submits just the symbol string as the field value.
+    Uses inline CSS only — no Tailwind CDN dependency.
     """
 
+    # Matches Tailwind: px-4 py-2 border border-gray-300 rounded-lg
+    _INPUT_CSS = (
+        "width:100%;padding:8px 16px;border:1px solid #d1d5db;border-radius:8px;"
+        "font-size:14px;color:#374151;background:#fff;outline:none;"
+        "box-sizing:border-box;font-family:inherit;line-height:1.5;"
+    )
+
     def render(self, name, value, attrs=None, renderer=None):
+        import json
         from django.utils.html import escape
+        from app.models import Asset, Stock
+
         attrs = attrs or {}
         field_id = attrs.get('id', f'id_{name}')
-        css_class = attrs.get('class', '')
         current = escape(value or '')
+
+        # Build local dataset: Asset model + Stock model + MARKET_CHOICES
+        local = []
+        seen = set()
+        for a in Asset.objects.all().order_by('symbol').values('symbol', 'category'):
+            sym = a['symbol']
+            if sym and sym not in seen:
+                local.append({'symbol': sym, 'name': a.get('category', '')})
+                seen.add(sym)
+        for s in Stock.objects.filter(is_active=True).order_by('symbol').values('symbol', 'name'):
+            sym = s['symbol']
+            if sym and sym not in seen:
+                local.append({'symbol': sym, 'name': s['name']})
+                seen.add(sym)
+        for sym, label in UserCopyTraderHistory.MARKET_CHOICES:
+            if sym not in seen:
+                local.append({'symbol': sym, 'name': label})
+                seen.add(sym)
+
+        local_json = json.dumps(local)
+        input_css = self._INPUT_CSS
+
+        # When a value is already set (edit forms): show pill with logo.
+        # When empty (add forms): show plain input with correct styling.
+        pill_display = 'flex' if current else 'none'
+        plain_display = 'none' if current else 'block'
 
         html = f"""
 <div style="position:relative;width:100%;">
+  <div id="fmp-wrap-{field_id}"
+       style="display:{pill_display};align-items:center;gap:8px;
+              padding:6px 12px;border:1px solid #d1d5db;border-radius:8px;
+              background:#fff;cursor:text;box-sizing:border-box;min-height:40px;"
+       onclick="document.getElementById('fmp-disp-{field_id}').focus()">
+    <img id="fmp-sel-img-{field_id}"
+         src="https://financialmodelingprep.com/image-stock/{current}.png"
+         style="width:24px;height:24px;object-fit:contain;flex-shrink:0;"
+         onerror="this.style.display='none'">
+    <input type="text"
+           id="fmp-disp-{field_id}"
+           value="{current}"
+           placeholder="Type to search (e.g. AAPL, EURUSD, BTCUSD)..."
+           autocomplete="off"
+           style="border:none;outline:none;flex:1;font-size:14px;background:transparent;
+                  min-width:0;font-family:inherit;color:#374151;">
+  </div>
   <input type="text"
-         id="fmp-disp-{field_id}"
+         id="fmp-plain-{field_id}"
          value="{current}"
          placeholder="Type to search (e.g. AAPL, EURUSD, BTCUSD)..."
          autocomplete="off"
-         class="{css_class}"
-         style="width:100%;box-sizing:border-box;">
+         style="display:{plain_display};{input_css}">
   <input type="hidden" name="{name}" id="{field_id}" value="{current}">
   <div id="fmp-drop-{field_id}"
        style="display:none;position:absolute;z-index:9999;left:0;right:0;
-              max-height:260px;overflow-y:auto;background:#fff;
-              border:1px solid #d1d5db;border-radius:6px;
-              box-shadow:0 4px 16px rgba(0,0,0,.12);margin-top:2px;"></div>
+              max-height:280px;overflow-y:auto;background:#fff;
+              border:1px solid #d1d5db;border-radius:8px;
+              box-shadow:0 6px 20px rgba(0,0,0,.15);margin-top:2px;"></div>
 </div>
 <script>
 (function(){{
+  var LOCAL   = {local_json};
+  var wrap    = document.getElementById('fmp-wrap-{field_id}');
   var disp    = document.getElementById('fmp-disp-{field_id}');
+  var plain   = document.getElementById('fmp-plain-{field_id}');
+  var selImg  = document.getElementById('fmp-sel-img-{field_id}');
   var hidden  = document.getElementById('{field_id}');
   var drop    = document.getElementById('fmp-drop-{field_id}');
-  if (!disp || !hidden || !drop) return;
+  if (!hidden || !drop) return;
 
-  var tm, picking = false;
+  var fmpTm, picking = false;
 
-  disp.addEventListener('input', function(){{
-    hidden.value = disp.value.trim();
-    clearTimeout(tm);
-    var q = disp.value.trim();
-    if (!q) {{ drop.style.display = 'none'; return; }}
-    tm = setTimeout(function(){{ search(q); }}, 300);
-  }});
+  function attachListeners(inp) {{
+    if (!inp) return;
+    inp.addEventListener('focus', function(){{
+      inp.style.borderColor = '#3b82f6';
+      inp.style.boxShadow = '0 0 0 2px rgba(59,130,246,.3)';
+      var q = inp.value.trim();
+      if (q) showResults(filterLocal(q));
+    }});
+    inp.addEventListener('blur', function(){{
+      inp.style.borderColor = '#d1d5db';
+      inp.style.boxShadow = '';
+      setTimeout(function(){{ if (!picking) drop.style.display = 'none'; }}, 200);
+    }});
+    inp.addEventListener('input', function(){{
+      var q = inp.value.trim();
+      hidden.value = q;
+      if (!q) {{ drop.style.display = 'none'; return; }}
+      showResults(filterLocal(q));
+      clearTimeout(fmpTm);
+      fmpTm = setTimeout(function(){{ fetchFmp(q); }}, 350);
+    }});
+  }}
+  attachListeners(disp);
+  attachListeners(plain);
 
-  disp.addEventListener('focus', function(){{
-    var q = disp.value.trim();
-    if (q) search(q);
-  }});
+  function filterLocal(q) {{
+    var ql = q.toLowerCase();
+    return LOCAL.filter(function(it){{
+      return (it.symbol + ' ' + it.name).toLowerCase().indexOf(ql) !== -1;
+    }}).slice(0, 20);
+  }}
 
-  disp.addEventListener('blur', function(){{
-    setTimeout(function(){{ if (!picking) drop.style.display = 'none'; }}, 180);
-  }});
-
-  function search(q) {{
+  function fetchFmp(q) {{
     fetch('/dashboard/api/fmp-search/?q=' + encodeURIComponent(q))
-      .then(function(r) {{ return r.json(); }})
-      .then(function(items) {{
-        drop.innerHTML = '';
-        if (!Array.isArray(items) || !items.length) {{
-          drop.style.display = 'none'; return;
-        }}
-        items.forEach(function(it) {{
-          if (!it.symbol) return;
-          var row = document.createElement('div');
-          row.style.cssText = 'padding:9px 14px;cursor:pointer;font-size:14px;' +
-                              'border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:10px;';
-          var logo = document.createElement('img');
-          logo.src = 'https://financialmodelingprep.com/image-stock/' + it.symbol + '.png';
-          logo.style.cssText = 'width:28px;height:28px;object-fit:contain;flex-shrink:0;';
-          logo.onerror = function() {{ logo.style.display = 'none'; }};
-          var label = document.createElement('span');
-          label.innerHTML = '<strong>' + it.symbol + '</strong>' +
-            (it.name ? ' <span style="color:#6b7280;font-size:13px;">— ' + it.name + '</span>' : '');
-          row.appendChild(logo);
-          row.appendChild(label);
-          row.addEventListener('mouseenter', function() {{
-            row.style.background = '#f0f9ff'; picking = true;
-          }});
-          row.addEventListener('mouseleave', function() {{
-            row.style.background = ''; picking = false;
-          }});
-          row.addEventListener('mousedown', function(e) {{
-            e.preventDefault();
-            hidden.value = it.symbol;
-            disp.value  = it.symbol;
-            drop.style.display = 'none';
-            picking = false;
-            disp.focus();
-          }});
-          drop.appendChild(row);
-        }});
-        drop.style.display = 'block';
+      .then(function(r){{ return r.ok ? r.json() : []; }})
+      .then(function(fmpItems){{
+        if (!Array.isArray(fmpItems) || !fmpItems.length) return;
+        var localSyms = new Set(filterLocal(q).map(function(x){{ return x.symbol; }}));
+        var extra = fmpItems.filter(function(it){{ return it.symbol && !localSyms.has(it.symbol); }});
+        if (extra.length) showResults(filterLocal(q).concat(extra));
       }})
-      .catch(function() {{ drop.style.display = 'none'; }});
+      .catch(function(){{}});
+  }}
+
+  function selectItem(sym) {{
+    hidden.value = sym;
+    if (plain) plain.style.display = 'none';
+    if (disp)  disp.value = sym;
+    if (selImg) {{
+      selImg.src = 'https://financialmodelingprep.com/image-stock/' + sym + '.png';
+      selImg.style.display = 'block';
+    }}
+    if (wrap) wrap.style.display = 'flex';
+    drop.style.display = 'none';
+    picking = false;
+    if (disp) disp.focus();
+  }}
+
+  function showResults(items) {{
+    drop.innerHTML = '';
+    if (!items.length) {{ drop.style.display = 'none'; return; }}
+    items.forEach(function(it){{
+      if (!it.symbol) return;
+      var row = document.createElement('div');
+      row.style.cssText = 'padding:10px 14px;cursor:pointer;font-size:14px;' +
+                          'border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:10px;';
+      var logo = document.createElement('img');
+      logo.src = 'https://financialmodelingprep.com/image-stock/' + it.symbol + '.png';
+      logo.style.cssText = 'width:28px;height:28px;object-fit:contain;flex-shrink:0;border-radius:4px;';
+      logo.onerror = function(){{ logo.style.display='none'; }};
+      var lbl = document.createElement('span');
+      lbl.innerHTML = '<strong style="font-size:14px;">' + it.symbol + '</strong>' +
+        (it.name ? '<span style="color:#6b7280;font-size:12px;margin-left:6px;">— ' + it.name + '</span>' : '');
+      row.appendChild(logo);
+      row.appendChild(lbl);
+      row.addEventListener('mouseenter', function(){{ row.style.background='#eff6ff'; picking=true; }});
+      row.addEventListener('mouseleave', function(){{ row.style.background=''; picking=false; }});
+      row.addEventListener('mousedown', function(e){{
+        e.preventDefault();
+        selectItem(it.symbol);
+      }});
+      drop.appendChild(row);
+    }});
+    drop.style.display = 'block';
   }}
 }})();
 </script>"""
@@ -1110,6 +1193,19 @@ class StockForm(forms.Form):
         required=False,
         widget=forms.ClearableFileInput(attrs={'class': _input, 'accept': 'image/*'}),
         help_text="Leave blank to use FMP's logo automatically.",
+    )
+    CATEGORY_CHOICES = [
+        ('stock',   'Stock'),
+        ('crypto',  'Crypto'),
+        ('etf',     'ETF'),
+        ('indices', 'Indices'),
+        ('forex',   'Forex'),
+    ]
+    category = forms.ChoiceField(
+        label="Category",
+        choices=CATEGORY_CHOICES,
+        initial='stock',
+        widget=forms.Select(attrs={'class': _input}),
     )
     is_active = forms.BooleanField(
         label="Active (Visible to users)", required=False, initial=True,

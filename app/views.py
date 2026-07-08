@@ -2336,40 +2336,89 @@ def get_all_transaction_history(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# ---------------------------------------------------------------------------
+# FMP-driven market data — no DB required for browsing
+# ---------------------------------------------------------------------------
+_CATEGORY_SYMBOLS = {
+    'stock': [
+        'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META',
+        'JPM', 'V', 'JNJ', 'WMT', 'MA', 'PG', 'UNH', 'BAC',
+        'XOM', 'AVGO', 'LLY', 'NFLX', 'DIS',
+    ],
+    'crypto': [
+        'BTCUSD', 'ETHUSD', 'BNBUSD', 'XRPUSD', 'SOLUSD',
+        'ADAUSD', 'DOGEUSD', 'AVAXUSD', 'LINKUSD', 'LTCUSD',
+    ],
+    'etf': [
+        'SPY', 'QQQ', 'IWM', 'DIA', 'GLD', 'VTI', 'VOO',
+        'ARKK', 'XLF', 'XLK', 'TLT', 'EFA', 'SLV', 'XLE', 'VNQ',
+    ],
+    'indices': [
+        'SPX', 'NDX', 'DJI', 'RUT', 'VIX',
+    ],
+    'forex': [
+        'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD',
+        'USDCAD', 'USDCHF', 'NZDUSD', 'EURGBP',
+    ],
+}
+
+_FEATURED_SYMBOLS = {'AAPL', 'MSFT', 'BTCUSD', 'ETHUSD', 'SPY', 'EURUSD'}
+
+_SYMBOL_TO_CATEGORY = {
+    sym: cat
+    for cat, syms in _CATEGORY_SYMBOLS.items()
+    for sym in syms
+}
+
+_SYMBOL_NAMES = {
+    'BTCUSD': 'Bitcoin', 'ETHUSD': 'Ethereum', 'BNBUSD': 'BNB',
+    'XRPUSD': 'XRP', 'SOLUSD': 'Solana', 'ADAUSD': 'Cardano',
+    'DOGEUSD': 'Dogecoin', 'AVAXUSD': 'Avalanche',
+    'LINKUSD': 'Chainlink', 'LTCUSD': 'Litecoin',
+    'SPX': 'S&P 500', 'NDX': 'NASDAQ 100', 'DJI': 'Dow Jones',
+    'RUT': 'Russell 2000', 'VIX': 'CBOE VIX',
+    'EURUSD': 'EUR/USD', 'GBPUSD': 'GBP/USD', 'USDJPY': 'USD/JPY',
+    'AUDUSD': 'AUD/USD', 'USDCAD': 'USD/CAD', 'USDCHF': 'USD/CHF',
+    'NZDUSD': 'NZD/USD', 'EURGBP': 'EUR/GBP',
+}
+
+_ALL_SYMBOLS = [sym for syms in _CATEGORY_SYMBOLS.values() for sym in syms]
+
+
 # Stocks
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def stock_list(request):
-    """
-    GET: List all active stocks with live prices from FMP.
-    Query params: search, featured, limit
-    """
     from app.fmp_client import get_quotes
 
-    stocks = Stock.objects.filter(is_active=True)
+    category = request.GET.get("category", "all").lower()
+    search = (request.GET.get("search") or "").strip().lower()
+    featured = request.GET.get("featured", "").lower() == "true"
+    limit_param = request.GET.get("limit")
 
-    search = request.GET.get("search")
+    if category and category != "all":
+        symbols = list(_CATEGORY_SYMBOLS.get(category, []))
+    else:
+        symbols = list(_ALL_SYMBOLS)
+
     if search:
-        stocks = stocks.filter(
-            Q(symbol__icontains=search) | Q(name__icontains=search)
-        )
+        symbols = [
+            s for s in symbols
+            if search in s.lower() or search in _SYMBOL_NAMES.get(s, "").lower()
+        ]
 
-    featured = request.GET.get("featured")
-    if featured and featured.lower() == "true":
-        stocks = stocks.filter(is_featured=True)
+    if featured:
+        symbols = [s for s in symbols if s in _FEATURED_SYMBOLS]
 
-    limit = request.GET.get("limit")
-    if limit:
+    if limit_param:
         try:
-            stocks = stocks[:int(limit)]
+            symbols = symbols[:int(limit_param)]
         except ValueError:
             pass
 
-    stocks = list(stocks)
-    if not stocks:
+    if not symbols:
         return Response({"success": True, "count": 0, "stocks": []}, status=status.HTTP_200_OK)
 
-    symbols = [s.symbol for s in stocks]
     try:
         quotes = get_quotes(symbols)
         quote_map = {q["symbol"].upper(): q for q in quotes if "symbol" in q}
@@ -2377,70 +2426,96 @@ def stock_list(request):
         quote_map = {}
 
     result = []
-    for stock in stocks:
-        q = quote_map.get(stock.symbol.upper(), {})
+    for sym in symbols:
+        q = quote_map.get(sym.upper(), {})
         price      = float(q.get("price") or 0)
         change     = float(q.get("change") or 0)
         change_pct = float(q.get("changePercentage") or q.get("changesPercentage") or 0)
-
-        logo_url = (
-            stock.image.url
-            if stock.image
-            else f"https://financialmodelingprep.com/image-stock/{stock.symbol}.png"
-        )
+        name       = q.get("name") or _SYMBOL_NAMES.get(sym, sym)
 
         result.append({
-            "id":               stock.id,
-            "symbol":           stock.symbol,
-            "name":             stock.name,
-            "logo_url":         logo_url,
-            "price":            f"{price:.2f}",
-            "change":           f"{change:.2f}",
-            "change_percent":   f"{change_pct:.2f}",
+            "symbol":             sym,
+            "name":               name,
+            "logo_url":           f"https://financialmodelingprep.com/image-stock/{sym}.png",
+            "category":           _SYMBOL_TO_CATEGORY.get(sym, "stock"),
+            "price":              f"{price:.2f}",
+            "change":             f"{change:.2f}",
+            "change_percent":     f"{change_pct:.2f}",
             "is_positive_change": change_pct >= 0,
-            "is_featured":      stock.is_featured,
+            "is_featured":        sym in _FEATURED_SYMBOLS,
         })
 
+    result.sort(key=lambda x: float(x["price"]) == 0)
     return Response({"success": True, "count": len(result), "stocks": result}, status=status.HTTP_200_OK)
 
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def stock_detail(request, symbol):
-    """
-    GET: Retrieve a single stock by symbol
-    """
+    from app.fmp_client import fmp_get
+
+    symbol = symbol.upper()
+
     try:
-        stock = Stock.objects.get(symbol=symbol.upper(), is_active=True)
-    except Stock.DoesNotExist:
-        return Response(
-            {
-                "success": False,
-                "error": "Stock not found"
-            },
-            status=status.HTTP_404_NOT_FOUND
-        )
-    
-    serializer = StockSerializer(stock)
-    
-    # If user is authenticated, include their position in this stock
+        quotes = fmp_get("/quote", {"symbol": symbol})
+        if not (isinstance(quotes, list) and quotes):
+            return Response({"success": False, "error": "Symbol not found"}, status=status.HTTP_404_NOT_FOUND)
+        q = quotes[0]
+    except Exception:
+        return Response({"success": False, "error": "Unable to fetch market data"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    profile = {}
+    try:
+        profiles = fmp_get(f"/profile/{symbol}")
+        if isinstance(profiles, list) and profiles:
+            profile = profiles[0]
+        elif isinstance(profiles, dict):
+            profile = profiles
+    except Exception:
+        pass
+
+    price      = float(q.get("price") or 0)
+    change     = float(q.get("change") or 0)
+    change_pct = float(q.get("changePercentage") or q.get("changesPercentage") or 0)
+
+    stock_data = {
+        "symbol":           symbol,
+        "name":             q.get("name") or profile.get("companyName") or _SYMBOL_NAMES.get(symbol, symbol),
+        "category":         _SYMBOL_TO_CATEGORY.get(symbol, "stock"),
+        "logo_url":         f"https://financialmodelingprep.com/image-stock/{symbol}.png",
+        "price":            f"{price:.2f}",
+        "change":           f"{change:.2f}",
+        "change_percent":   f"{change_pct:.2f}",
+        "is_positive_change": change_pct >= 0,
+        "open":             float(q.get("open") or 0),
+        "previous_close":   float(q.get("previousClose") or 0),
+        "day_high":         float(q.get("dayHigh") or 0),
+        "day_low":          float(q.get("dayLow") or 0),
+        "year_high":        float(q.get("yearHigh") or 0),
+        "year_low":         float(q.get("yearLow") or 0),
+        "market_cap":       q.get("marketCap") or profile.get("mktCap"),
+        "volume":           q.get("volume"),
+        "avg_volume":       q.get("avgVolume"),
+        "eps":              q.get("eps"),
+        "pe":               q.get("pe"),
+        "exchange":         q.get("exchange") or profile.get("exchangeShortName"),
+        "sector":           profile.get("sector"),
+        "industry":         profile.get("industry"),
+        "description":      profile.get("description"),
+        "website":          profile.get("website"),
+        "ceo":              profile.get("ceo"),
+    }
+
     user_position = None
     if request.user.is_authenticated:
         try:
-            position = UserStockPosition.objects.get(
-                user=request.user,
-                stock=stock,
-                is_active=True
-            )
+            db_stock = Stock.objects.get(symbol=symbol, is_active=True)
+            position = UserStockPosition.objects.get(user=request.user, stock=db_stock, is_active=True)
             user_position = UserStockPositionSerializer(position).data
-        except UserStockPosition.DoesNotExist:
+        except (Stock.DoesNotExist, UserStockPosition.DoesNotExist):
             pass
-    
-    return Response({
-        "success": True,
-        "stock": serializer.data,
-        "user_position": user_position
-    }, status=status.HTTP_200_OK)
+
+    return Response({"success": True, "stock": stock_data, "user_position": user_position}, status=status.HTTP_200_OK)
 
 
 @api_view(["GET"])

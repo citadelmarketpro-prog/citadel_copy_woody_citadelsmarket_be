@@ -798,7 +798,11 @@ class UserCopyTraderHistory(models.Model):
 
         
         
-        return logo_mapping.get(self.market, None)
+        if self.market in logo_mapping:
+            return logo_mapping[self.market]
+
+        # Universal fallback: FMP image URL works for any stock symbol
+        return f"https://financialmodelingprep.com/image-stock/{self.market}.png"
     
     @property
     def market_name(self):
@@ -1365,9 +1369,22 @@ class Notification(models.Model):
 class Stock(models.Model):
     """Model for stock/asset data"""
 
+    CATEGORY_CHOICES = [
+        ('stock',   'Stock'),
+        ('crypto',  'Crypto'),
+        ('etf',     'ETF'),
+        ('indices', 'Indices'),
+        ('forex',   'Forex'),
+    ]
+
     symbol = models.CharField(max_length=20, unique=True)
     name = models.CharField(max_length=200)
     image = CloudinaryField("image", folder="stock_images", blank=True, null=True)
+    category = models.CharField(
+        max_length=20,
+        choices=CATEGORY_CHOICES,
+        default='stock',
+    )
     is_active = models.BooleanField(default=True)
     is_featured = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -1380,6 +1397,7 @@ class Stock(models.Model):
         indexes = [
             models.Index(fields=['symbol']),
             models.Index(fields=['is_active', 'is_featured']),
+            models.Index(fields=['category']),
         ]
 
     def __str__(self):
