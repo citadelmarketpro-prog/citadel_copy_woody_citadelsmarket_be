@@ -55,7 +55,7 @@ def get_quotes(symbols):
 def search_symbols(query, limit=15):
     """Search FMP for symbols by ticker or company name. Returns [{symbol, name}]."""
     try:
-        results = fmp_get("/search", {"query": query, "limit": limit})
+        results = fmp_get("/search-symbol", {"query": query, "limit": limit})
         if isinstance(results, list):
             return [
                 {"symbol": r.get("symbol", ""), "name": r.get("name", "")}
@@ -68,14 +68,14 @@ def search_symbols(query, limit=15):
 
 def get_news(feed_type="stock", limit=50):
     """
-    Fetch news from FMP stable API.
+    Fetch latest news from FMP stable API.
     feed_type: 'stock' | 'forex' | 'crypto'
     Note: 'general' is not available on the Starter plan.
     """
     endpoints = {
-        "stock":  "/news/stock",
-        "forex":  "/news/forex",
-        "crypto": "/news/crypto",
+        "stock":  "/news/stock-latest",
+        "forex":  "/news/forex-latest",
+        "crypto": "/news/crypto-latest",
     }
-    endpoint = endpoints.get(feed_type, "/news/stock")
+    endpoint = endpoints.get(feed_type, "/news/stock-latest")
     return fmp_get(endpoint, {"limit": limit})

@@ -2429,7 +2429,7 @@ def stock_list(request):
         result.append({
             "symbol":             sym,
             "name":               name,
-            "logo_url":           f"https://financialmodelingprep.com/image-stock/{sym}.png",
+            "logo_url":           f"https://images.financialmodelingprep.com/symbol/{sym}.png",
             "category":           _SYMBOL_TO_CATEGORY.get(sym, "stock"),
             "price":              f"{price:.2f}",
             "change":             f"{change:.2f}",
@@ -2459,7 +2459,7 @@ def stock_detail(request, symbol):
 
     profile = {}
     try:
-        profiles = fmp_get(f"/profile/{symbol}")
+        profiles = fmp_get("/profile", {"symbol": symbol})
         if isinstance(profiles, list) and profiles:
             profile = profiles[0]
         elif isinstance(profiles, dict):
@@ -2475,7 +2475,7 @@ def stock_detail(request, symbol):
         "symbol":           symbol,
         "name":             q.get("name") or profile.get("companyName") or _SYMBOL_NAMES.get(symbol, symbol),
         "category":         _SYMBOL_TO_CATEGORY.get(symbol, "stock"),
-        "logo_url":         f"https://financialmodelingprep.com/image-stock/{symbol}.png",
+        "logo_url":         f"https://images.financialmodelingprep.com/symbol/{symbol}.png",
         "price":            f"{price:.2f}",
         "change":           f"{change:.2f}",
         "change_percent":   f"{change_pct:.2f}",
