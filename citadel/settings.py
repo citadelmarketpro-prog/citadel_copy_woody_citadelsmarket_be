@@ -179,12 +179,14 @@ CSRF_TRUSTED_ORIGINS = [
 # ----------------------------
 # SESSION
 # ----------------------------
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 SESSION_COOKIE_NAME = 'citadelsmarket_session'
 SESSION_COOKIE_AGE = 86400 * 30        # 30 days
 SESSION_SAVE_EVERY_REQUEST = True       # reset expiry on each request
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_NAME = 'csrftoken_citadelsmarket'
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
