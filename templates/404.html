@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 — Page Not Found | Citadels Market Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; font-family: ui-sans-serif, system-ui, sans-serif; }
+        .glow { text-shadow: 0 0 80px rgba(59,130,246,0.4); }
+        .card { background-color: #1e293b; border: 1px solid #334155; border-radius: 1rem; }
+        .path-box { background-color: #0f172a; border: 1px solid #334155; border-radius: 0.5rem; font-family: ui-monospace, monospace; }
+        .btn-primary { background-color: #2563eb; color: #fff; border-radius: 0.5rem; padding: 0.625rem 1.5rem; font-weight: 600; font-size: 0.875rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; transition: background-color 0.2s; }
+        .btn-primary:hover { background-color: #1d4ed8; }
+        .btn-secondary { background-color: #1e293b; border: 1px solid #334155; color: #94a3b8; border-radius: 0.5rem; padding: 0.625rem 1.5rem; font-weight: 600; font-size: 0.875rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.2s; cursor: pointer; }
+        .btn-secondary:hover { border-color: #475569; color: #e2e8f0; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-6">
+
+    <div class="w-full max-w-xl">
+
+        <!-- Brand -->
+        <div class="text-center mb-8">
+            <span class="text-blue-400 font-bold text-lg tracking-wide">
+                <i class="fas fa-chart-line mr-2"></i>Citadels Market <span class="text-slate-400 font-normal">Admin</span>
+            </span>
+        </div>
+
+        <!-- Error Card -->
+        <div class="card p-8 text-center">
+
+            <!-- Big 404 -->
+            <div class="glow text-8xl font-black text-blue-500 mb-2 select-none">404</div>
+            <div class="text-slate-400 text-xs font-semibold tracking-widest uppercase mb-6">Page Not Found</div>
+
+            <p class="text-slate-300 text-sm mb-6 leading-relaxed">
+                {{ exception }}
+            </p>
+
+            <!-- Attempted route -->
+            <div class="mb-8">
+                <p class="text-xs text-slate-500 font-medium mb-2 text-left">Requested path:</p>
+                <div class="path-box px-4 py-3 text-left">
+                    <span class="text-slate-500 text-xs select-none">GET &nbsp;</span>
+                    <span class="text-red-400 text-sm break-all">{{ path }}</span>
+                </div>
+                <p class="text-xs text-slate-600 mt-2 text-left">
+                    This route does not exist on the server. Check the URL for typos.
+                </p>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="/dashboard/" class="btn-primary">
+                    <i class="fas fa-home text-xs"></i> Go to Dashboard
+                </a>
+                <button onclick="history.back()" class="btn-secondary">
+                    <i class="fas fa-arrow-left text-xs"></i> Go Back
+                </button>
+            </div>
+        </div>
+
+        <!-- Help text -->
+        <p class="text-center text-slate-600 text-xs mt-6">
+            If you believe this is a mistake, contact your system administrator.
+        </p>
+    </div>
+
+</body>
+</html>

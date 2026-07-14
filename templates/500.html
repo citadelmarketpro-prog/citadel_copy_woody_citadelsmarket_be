@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>500 — Server Error | Citadels Market Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; font-family: ui-sans-serif, system-ui, sans-serif; }
+        .glow { text-shadow: 0 0 80px rgba(239,68,68,0.4); }
+        .card { background-color: #1e293b; border: 1px solid #334155; border-radius: 1rem; }
+        .error-box { background-color: rgba(127,29,29,0.15); border: 1px solid rgba(239,68,68,0.25); border-radius: 0.5rem; font-family: ui-monospace, monospace; }
+        .badge { background-color: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #f87171; border-radius: 0.375rem; padding: 0.2rem 0.6rem; font-size: 0.7rem; font-weight: 700; font-family: ui-monospace, monospace; }
+        .btn-primary { background-color: #dc2626; color: #fff; border-radius: 0.5rem; padding: 0.625rem 1.5rem; font-weight: 600; font-size: 0.875rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; transition: background-color 0.2s; }
+        .btn-primary:hover { background-color: #b91c1c; }
+        .btn-secondary { background-color: #1e293b; border: 1px solid #334155; color: #94a3b8; border-radius: 0.5rem; padding: 0.625rem 1.5rem; font-weight: 600; font-size: 0.875rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.2s; cursor: pointer; }
+        .btn-secondary:hover { border-color: #475569; color: #e2e8f0; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-6">
+
+    <div class="w-full max-w-xl">
+
+        <!-- Brand -->
+        <div class="text-center mb-8">
+            <span class="text-blue-400 font-bold text-lg tracking-wide">
+                <i class="fas fa-chart-line mr-2"></i>Citadels Market <span class="text-slate-400 font-normal">Admin</span>
+            </span>
+        </div>
+
+        <!-- Error Card -->
+        <div class="card p-8 text-center">
+
+            <!-- Icon + 500 -->
+            <div class="flex items-center justify-center gap-3 mb-2">
+                <i class="fas fa-server text-red-500 text-4xl"></i>
+                <div class="glow text-8xl font-black text-red-500 select-none">500</div>
+            </div>
+            <div class="text-slate-400 text-xs font-semibold tracking-widest uppercase mb-6">Internal Server Error</div>
+
+            <p class="text-slate-300 text-sm mb-6 leading-relaxed">
+                The server encountered an unexpected condition that prevented it from fulfilling the request.
+            </p>
+
+            <!-- Error Details -->
+            <div class="error-box p-4 text-left mb-8">
+                <div class="flex items-center gap-2 mb-3">
+                    <i class="fas fa-bug text-red-400 text-xs"></i>
+                    <span class="text-xs text-red-400 font-semibold uppercase tracking-wider">Error Details</span>
+                    {% if error_type %}
+                    <span class="ml-auto badge">{{ error_type }}</span>
+                    {% endif %}
+                </div>
+                <p class="text-red-300 text-sm break-words leading-relaxed">
+                    {% if error_message %}{{ error_message }}{% else %}No additional information available.{% endif %}
+                </p>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="/dashboard/" class="btn-primary">
+                    <i class="fas fa-home text-xs"></i> Go to Dashboard
+                </a>
+                <button onclick="location.reload()" class="btn-secondary">
+                    <i class="fas fa-redo text-xs"></i> Retry
+                </button>
+            </div>
+        </div>
+
+        <p class="text-center text-slate-600 text-xs mt-6">
+            If this error persists, check the server logs or contact your system administrator.
+        </p>
+    </div>
+
+</body>
+</html>
