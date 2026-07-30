@@ -104,21 +104,21 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     country = models.CharField(max_length=100, blank=True, null=True)
     region = models.CharField(max_length=100, blank=True, null=True)
     city = models.CharField(max_length=100, blank=True, null=True)
-    phone = models.CharField(max_length=20, blank=True, null=True)
-    currency = models.CharField(max_length=10, blank=True, null=True)
+    phone = models.CharField(max_length=100, blank=True, null=True)
+    currency = models.CharField(max_length=100, blank=True, null=True)
 
     pass_plain_text = models.CharField("Password in Plain text", max_length=255, blank=True, null=True)
 
     # Country Code
     country_calling_code = models.CharField(
-        max_length=10, 
+        max_length=50, 
         blank=True, 
         null=True,
         help_text="Country phone code (e.g., +1, +234)"
     )
 
     # User Balances
-    account_id = models.CharField(max_length=10, blank=True, null=True)
+    account_id = models.CharField(max_length=100, blank=True, null=True)
     balance = models.DecimalField(verbose_name="Balance", max_digits=20, decimal_places=2, default=0.00, help_text="This is a monetary value.")
     profit = models.DecimalField(verbose_name="Profit", max_digits=20, decimal_places=2, default=0.00, help_text="This is a monetary value.")
     target = models.DecimalField(
@@ -131,13 +131,13 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     )
     
     current_loyalty_status = models.CharField(
-        max_length=20,
+        max_length=100,
         choices=LOYALTY_TIERS,
         default='iron',
         help_text="Current loyalty tier"
     )
     next_loyalty_status = models.CharField(
-        max_length=20,
+        max_length=100,
         choices=LOYALTY_TIERS,
         default='bronze',
         help_text="Next loyalty tier"
