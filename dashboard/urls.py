@@ -99,6 +99,13 @@ urlpatterns = [
     path('stocks/<int:stock_id>/edit/', views.stock_edit, name='stock_edit'),
     path('stocks/<int:stock_id>/delete/', views.stock_delete, name='stock_delete'),
 
+    # Notifications
+    path('notifications/', views.notifications_list, name='notifications_list'),
+    path('notifications/add/', views.notification_create, name='notification_create'),
+    path('notifications/<int:notification_id>/', views.notification_detail, name='notification_detail'),
+    path('notifications/<int:notification_id>/edit/', views.notification_edit, name='notification_edit'),
+    path('notifications/<int:notification_id>/delete/', views.notification_delete, name='notification_delete'),
+
     # Settings — User Cards
     path('cards/', views.cards_list, name='cards_list'),
     path('cards/<int:card_id>/', views.card_detail, name='card_detail'),

@@ -231,6 +231,13 @@
                     </a>
                 </li>
                 
+                <li>
+                    <a href="{% url 'dashboard:notifications_list' %}" class="flex items-center p-3 text-white rounded-lg hover:bg-blue-700 {% if 'notifications' in request.path %}bg-blue-700{% endif %}">
+                        <i class="fas fa-bell w-6"></i>
+                        <span class="ml-3">Notifications</span>
+                    </a>
+                </li>
+
                 <li><div class="text-xs text-blue-300 uppercase tracking-wider mt-6 mb-2 px-3">Requests</div></li>
                 <li>
                     <a href="{% url 'dashboard:deposits' %}" class="flex items-center p-3 text-white rounded-lg hover:bg-blue-700 {% if 'deposits' in request.path %}bg-blue-700{% endif %}">

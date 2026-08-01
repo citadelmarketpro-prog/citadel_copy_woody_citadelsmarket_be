@@ -138,10 +138,15 @@ def dashboard_data(request):
     # Get active portfolios
     from .models import Portfolio
     portfolios = user.portfolios.filter(is_active=True).values(
-        'id', 'market', 'direction', 'invested', 'profit_loss', 
+        'id', 'market', 'direction', 'invested', 'profit_loss',
         'value', 'opened_at', 'is_active'
     )
-    
+
+    # Today's P/L — sum of realized profit/loss from trades opened today only
+    today_start = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
+    todays_trades = UserCopyTraderHistory.objects.filter(user=user, opened_at__gte=today_start)
+    profit_today = sum((t.calculate_user_profit_loss() for t in todays_trades), Decimal('0.00'))
+
     # Build response data
     data = {
         'email': user.email,
@@ -151,7 +156,9 @@ def dashboard_data(request):
         'currency': user.currency or 'USD',
         'balance': float(user.balance),
         'profit': float(user.profit),
+        'profit_today': float(profit_today),
         'target': float(user.target),
+        'show_portfolio_growth': user.show_portfolio_growth,
         'current_loyalty_status': user.current_loyalty_status,
         'next_loyalty_status': user.next_loyalty_status,
         'next_amount_to_upgrade': user.next_amount_to_upgrade,

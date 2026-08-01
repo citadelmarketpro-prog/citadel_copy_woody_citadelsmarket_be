@@ -130,6 +130,13 @@ DATABASES = {
     )
 }
 
+# Server-side (named) cursors only stay valid for the life of a transaction.
+# Several views run plain autocommit queries — e.g. ModelChoiceField internally
+# calls queryset.iterator(), which opens one — so without this, Postgres can
+# drop the cursor before Django finishes reading from it (InvalidCursorName).
+if DATABASES['default'].get('ENGINE', '').endswith('postgresql'):
+    DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = True
+
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.sqlite3',

@@ -20,7 +20,7 @@ from .forms import (
     AddTraderForm, EditTraderForm, EditDepositForm,
     AddUserDirectTradeForm, AdminWalletForm, CardEditForm,
     EditCopyTradeForm, EditWithdrawalForm,
-    UserEditForm, StockForm,
+    UserEditForm, StockForm, NotificationForm,
 )
 from .decorators import admin_required
 
@@ -212,6 +212,16 @@ def user_detail(request, user_id):
             user.can_transfer = False
             user.save()
             messages.success(request, f'Transfer disabled for {user.email}')
+
+        elif action == 'enable_portfolio_growth':
+            user.show_portfolio_growth = True
+            user.save(update_fields=['show_portfolio_growth'])
+            messages.success(request, f'Portfolio Growth section enabled for {user.email}')
+
+        elif action == 'disable_portfolio_growth':
+            user.show_portfolio_growth = False
+            user.save(update_fields=['show_portfolio_growth'])
+            messages.success(request, f'Portfolio Growth section disabled for {user.email}')
 
         return redirect('dashboard:user_detail', user_id=user.id)
     
@@ -1508,11 +1518,8 @@ def add_user_trade(request, user_id):
             )
             profit = trade.calculate_user_profit_loss()
             if profit:
-                if profit > 0:
-                    viewed_user.balance = user_balance + profit
-                else:
-                    viewed_user.balance = max(Decimal('0.00'), user_balance + profit)
-                viewed_user.save(update_fields=['balance'])
+                viewed_user.profit = (viewed_user.profit or Decimal('0.00')) + profit
+                viewed_user.save(update_fields=['profit'])
 
             if profit is not None and profit >= 0:
                 notif_title = f'Trade Profit on {cd["market"]}!'
@@ -1599,11 +1606,8 @@ def bulk_add_user_trade(request):
                     )
                     profit = trade.calculate_user_profit_loss()
                     if profit:
-                        if profit > 0:
-                            u.balance = user_balance + profit
-                        else:
-                            u.balance = max(Decimal('0.00'), user_balance + profit)
-                        u.save(update_fields=['balance'])
+                        u.profit = (u.profit or Decimal('0.00')) + profit
+                        u.save(update_fields=['profit'])
 
                     if profit is not None and profit >= 0:
                         notif_title = f'Trade Profit on {cd["market"]}!'
@@ -2568,6 +2572,107 @@ def stock_delete(request, stock_id):
         messages.success(request, f'Stock {symbol} deleted.')
         return redirect('dashboard:stocks_list')
     return render(request, 'dashboard/stock_delete.html', {'stock': stock})
+
+
+
+# ─── Notifications CRUD ─────────────────────────────────────────────────────
+
+@admin_required
+def notifications_list(request):
+    search = request.GET.get('search', '')
+    type_filter = request.GET.get('type', '')
+    qs = Notification.objects.select_related('user').all().order_by('-created_at')
+    if search:
+        qs = qs.filter(
+            Q(title__icontains=search) |
+            Q(message__icontains=search) |
+            Q(user__email__icontains=search)
+        )
+    if type_filter:
+        qs = qs.filter(type=type_filter)
+    paginator = Paginator(qs, 25)
+    page = request.GET.get('page')
+    try:
+        notifications = paginator.page(page)
+    except PageNotAnInteger:
+        notifications = paginator.page(1)
+    except EmptyPage:
+        notifications = paginator.page(paginator.num_pages)
+    return render(request, 'dashboard/notifications_list.html', {
+        'notifications': notifications,
+        'paginator': paginator,
+        'page_obj': notifications,
+        'is_paginated': paginator.num_pages > 1,
+        'search': search,
+        'type_filter': type_filter,
+        'type_choices': Notification.TYPE_CHOICES,
+    })
+
+
+@admin_required
+def notification_detail(request, notification_id):
+    notification = get_object_or_404(Notification, id=notification_id)
+    return render(request, 'dashboard/notification_detail.html', {'notification': notification})
+
+
+@admin_required
+def notification_create(request):
+    if request.method == 'POST':
+        form = NotificationForm(request.POST)
+        if form.is_valid():
+            cd = form.cleaned_data
+            notification = Notification.objects.create(
+                user=cd['user'],
+                type=cd['type'],
+                title=cd['title'],
+                message=cd['message'],
+                full_details=cd['full_details'],
+                read=cd.get('read', False),
+            )
+            messages.success(request, f'Notification "{notification.title}" created.')
+            return redirect('dashboard:notification_detail', notification_id=notification.id)
+    else:
+        form = NotificationForm(initial={'type': 'system'})
+    return render(request, 'dashboard/notification_form.html', {'form': form, 'action': 'Create'})
+
+
+@admin_required
+def notification_edit(request, notification_id):
+    notification = get_object_or_404(Notification, id=notification_id)
+    if request.method == 'POST':
+        form = NotificationForm(request.POST)
+        if form.is_valid():
+            cd = form.cleaned_data
+            notification.user = cd['user']
+            notification.type = cd['type']
+            notification.title = cd['title']
+            notification.message = cd['message']
+            notification.full_details = cd['full_details']
+            notification.read = cd.get('read', False)
+            notification.save(update_fields=['user', 'type', 'title', 'message', 'full_details', 'read', 'updated_at'])
+            messages.success(request, f'Notification "{notification.title}" updated.')
+            return redirect('dashboard:notification_detail', notification_id=notification.id)
+    else:
+        form = NotificationForm(initial={
+            'user': notification.user_id,
+            'type': notification.type,
+            'title': notification.title,
+            'message': notification.message,
+            'full_details': notification.full_details,
+            'read': notification.read,
+        })
+    return render(request, 'dashboard/notification_form.html', {'form': form, 'notification': notification, 'action': 'Edit'})
+
+
+@admin_required
+def notification_delete(request, notification_id):
+    notification = get_object_or_404(Notification, id=notification_id)
+    if request.method == 'POST':
+        title = notification.title
+        notification.delete()
+        messages.success(request, f'Notification "{title}" deleted.')
+        return redirect('dashboard:notifications_list')
+    return render(request, 'dashboard/notification_delete.html', {'notification': notification})
 
 
 @admin_required

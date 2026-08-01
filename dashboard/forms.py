@@ -397,6 +397,222 @@ class FmpStockSymbolWidget(forms.TextInput):
 </script>"""
         return mark_safe(html + preview_html)
 
+class SearchableSelectWidget(forms.Widget):
+    """
+    Client-side searchable dropdown — trigger button + filterable panel,
+    same look as FmpComboboxWidget but for a fixed, already-known set of
+    options with no network calls (e.g. User, Notification Type).
+
+    `choices` may be an iterable of (value, label) pairs, or a zero-arg
+    callable returning one — use a callable when the options come from a
+    query, so it's re-evaluated fresh on every render instead of once at
+    import time.
+    """
+
+    def __init__(self, choices=(), placeholder='Select…', attrs=None):
+        super().__init__(attrs)
+        self.choices = choices
+        self.placeholder = placeholder
+
+    def render(self, name, value, attrs=None, renderer=None):
+        import json
+        from django.utils.html import escape
+
+        attrs = attrs or {}
+        field_id = attrs.get('id', f'id_{name}')
+        current = escape(str(value) if value not in (None, '') else '')
+
+        raw_choices = self.choices() if callable(self.choices) else self.choices
+        options = [{'value': str(v), 'label': str(l)} for v, l in raw_choices if str(v) != '']
+        options_json = json.dumps(options)
+
+        current_label = ''
+        for opt in options:
+            if opt['value'] == current:
+                current_label = opt['label']
+                break
+
+        placeholder = escape(self.placeholder)
+
+        html = f"""
+<style>
+#ssw-trigger-{field_id} {{
+  width:100%; display:flex; align-items:center; gap:10px;
+  padding:0 12px; min-height:42px; box-sizing:border-box;
+  background:#1e293b; border:1px solid #475569; border-radius:8px;
+  cursor:pointer; text-align:left; transition:border-color .15s; font-family:inherit;
+}}
+#ssw-trigger-{field_id}:hover {{ border-color:#818cf8; }}
+#ssw-trigger-{field_id}.ssw-open-{field_id} {{
+  border-color:#818cf8; border-bottom-left-radius:0; border-bottom-right-radius:0;
+  border-bottom-color:#334155; box-shadow:0 0 0 2px rgba(129,140,248,.2);
+}}
+
+#ssw-panel-{field_id} {{
+  display:none; position:absolute; z-index:9999; left:0; right:0;
+  background:#1e293b; border:1px solid #818cf8; border-top:none;
+  border-bottom-left-radius:8px; border-bottom-right-radius:8px;
+  box-shadow:0 12px 40px rgba(0,0,0,.6);
+}}
+
+#ssw-search-wrap-{field_id} {{
+  display:flex; align-items:center; gap:8px;
+  margin:10px 10px 6px; padding:0 10px;
+  background:#0f172a; border:1px solid #475569; border-radius:6px;
+  min-height:36px; transition:border-color .15s;
+}}
+#ssw-search-wrap-{field_id}:focus-within {{ border-color:#818cf8; box-shadow:0 0 0 2px rgba(129,140,248,.2); }}
+
+#ssw-search-{field_id} {{
+  border:none !important; outline:none; flex:1; font-size:13px;
+  background:transparent !important; color:#f1f5f9 !important;
+  padding:0; font-family:inherit; box-shadow:none !important;
+}}
+#ssw-search-{field_id}::placeholder {{ color:#64748b !important; }}
+
+#ssw-list-{field_id} {{ max-height:248px; overflow-y:auto; padding:4px 0; }}
+#ssw-list-{field_id}::-webkit-scrollbar {{ width:4px; }}
+#ssw-list-{field_id}::-webkit-scrollbar-track {{ background:transparent; }}
+#ssw-list-{field_id}::-webkit-scrollbar-thumb {{ background:#334155; border-radius:2px; }}
+
+.ssw-opt-{field_id} {{
+  display:flex; align-items:center; gap:10px;
+  padding:9px 14px; cursor:pointer; border-bottom:1px solid #0f172a;
+  transition:background .1s;
+}}
+.ssw-opt-{field_id}:last-child {{ border-bottom:none; }}
+.ssw-opt-{field_id}:hover {{ background:#334155; }}
+.ssw-opt-{field_id}.ssw-selected-{field_id} {{ background:rgba(99,102,241,.12); }}
+</style>
+
+<div style="position:relative;width:100%;">
+  <button type="button" id="ssw-trigger-{field_id}">
+    <span id="ssw-t-label-{field_id}"
+          style="flex:1;font-size:13.5px;color:{'#f1f5f9' if current_label else '#64748b'};
+                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+      {current_label or placeholder}
+    </span>
+    <svg id="ssw-chevron-{field_id}"
+         style="width:16px;height:16px;flex-shrink:0;color:#64748b;transition:transform .2s;"
+         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M6 9l6 6 6-6"/>
+    </svg>
+  </button>
+
+  <input type="hidden" name="{name}" id="{field_id}" value="{current}">
+
+  <div id="ssw-panel-{field_id}">
+    <div id="ssw-search-wrap-{field_id}">
+      <svg style="width:14px;height:14px;color:#64748b;flex-shrink:0;"
+           viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+      </svg>
+      <input type="text" id="ssw-search-{field_id}" placeholder="Search…" autocomplete="off">
+    </div>
+    <div id="ssw-list-{field_id}"></div>
+  </div>
+</div>
+
+<script>
+(function(){{
+  var OPTIONS  = {options_json};
+  var trigger  = document.getElementById('ssw-trigger-{field_id}');
+  var panel    = document.getElementById('ssw-panel-{field_id}');
+  var search   = document.getElementById('ssw-search-{field_id}');
+  var list     = document.getElementById('ssw-list-{field_id}');
+  var hidden   = document.getElementById('{field_id}');
+  var chevron  = document.getElementById('ssw-chevron-{field_id}');
+  var tLabel   = document.getElementById('ssw-t-label-{field_id}');
+  if (!trigger || !panel || !search || !list || !hidden) return;
+
+  var open = false, currentVal = '{current}';
+
+  function openPanel() {{
+    open = true;
+    panel.style.display = 'block';
+    trigger.classList.add('ssw-open-{field_id}');
+    chevron.style.transform = 'rotate(180deg)';
+    search.value = '';
+    renderList(OPTIONS);
+    setTimeout(function() {{ search.focus(); }}, 40);
+  }}
+
+  function closePanel() {{
+    open = false;
+    panel.style.display = 'none';
+    trigger.classList.remove('ssw-open-{field_id}');
+    chevron.style.transform = '';
+  }}
+
+  trigger.addEventListener('click', function(e) {{
+    e.stopPropagation();
+    open ? closePanel() : openPanel();
+  }});
+
+  document.addEventListener('click', function(e) {{
+    if (open && !panel.contains(e.target) && e.target !== trigger) closePanel();
+  }});
+
+  search.addEventListener('input', function() {{
+    var q = search.value.trim().toLowerCase();
+    if (!q) {{ renderList(OPTIONS); return; }}
+    renderList(OPTIONS.filter(function(it) {{
+      return it.label.toLowerCase().indexOf(q) !== -1 || it.value.toLowerCase().indexOf(q) !== -1;
+    }}));
+  }});
+
+  search.addEventListener('keydown', function(e) {{
+    if (e.key === 'Escape') closePanel();
+  }});
+
+  function selectItem(val, label) {{
+    currentVal = val;
+    hidden.value = val;
+    tLabel.textContent = label;
+    tLabel.style.color = '#f1f5f9';
+    closePanel();
+  }}
+
+  function renderList(items) {{
+    list.innerHTML = '';
+    if (!items.length) {{
+      var empty = document.createElement('div');
+      empty.style.cssText = 'padding:14px 16px;color:#64748b;font-size:13px;text-align:center;';
+      empty.textContent = 'No matches found';
+      list.appendChild(empty);
+      return;
+    }}
+    items.forEach(function(it) {{
+      var row = document.createElement('div');
+      row.className = 'ssw-opt-{field_id}' + (it.value === currentVal ? ' ssw-selected-{field_id}' : '');
+
+      var label = document.createElement('span');
+      label.style.cssText = 'flex:1;font-size:13px;color:#f1f5f9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+      label.textContent = it.label;
+      row.appendChild(label);
+
+      if (it.value === currentVal) {{
+        var chk = document.createElement('span');
+        chk.style.cssText = 'color:#818cf8;font-size:15px;font-weight:700;flex-shrink:0;';
+        chk.textContent = '✓';
+        row.appendChild(chk);
+      }}
+
+      row.addEventListener('mousedown', function(e) {{
+        e.preventDefault();
+        selectItem(it.value, it.label);
+      }});
+      list.appendChild(row);
+    }});
+  }}
+}})();
+</script>"""
+        return mark_safe(html)
+
+    def value_from_datadict(self, data, files, name):
+        return data.get(name, '')
+
+
 class AddTradeForm(forms.Form):
     """Form for adding trades with extensive dropdowns"""
     
@@ -1368,6 +1584,67 @@ class StockForm(forms.Form):
         label="Featured (Show prominently)", required=False,
         widget=forms.CheckboxInput(attrs={'class': _checkbox}),
     )
+
+
+# ===== Notification Form =====
+
+class NotificationForm(forms.Form):
+    _input = 'w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+    _textarea = 'w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+    _checkbox = 'w-4 h-4 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500'
+
+    user = forms.CharField(
+        label="User",
+        widget=SearchableSelectWidget(
+            choices=lambda: [(u.id, u.email) for u in CustomUser.objects.all().order_by('email')],
+            placeholder='Search user by email…',
+            attrs={'class': _input},
+        ),
+    )
+    TYPE_CHOICES = [
+        ('trade', 'Trade'),
+        ('deposit', 'Deposit'),
+        ('withdrawal', 'Withdrawal'),
+        ('alert', 'Alert'),
+        ('system', 'System'),
+        ('news', 'News'),
+    ]
+    type = forms.ChoiceField(
+        label="Type",
+        choices=TYPE_CHOICES,
+        widget=SearchableSelectWidget(
+            choices=TYPE_CHOICES,
+            placeholder='Select type…',
+            attrs={'class': _input},
+        ),
+    )
+    title = forms.CharField(
+        label="Title", max_length=255,
+        widget=forms.TextInput(attrs={'class': _input, 'placeholder': 'Deposit Confirmed'}),
+    )
+    message = forms.CharField(
+        label="Short Message",
+        widget=forms.Textarea(attrs={'class': _textarea, 'rows': 2, 'placeholder': 'Short summary shown in the notification list.'}),
+        help_text="Shown at the top of the notification and in list previews.",
+    )
+    full_details = forms.CharField(
+        label="Full Details",
+        widget=forms.Textarea(attrs={'class': _textarea, 'rows': 6, 'placeholder': 'Amount: $500\nCurrency: BTC\nStatus: Completed\nReference: TXN123456'}),
+        help_text="One 'Label: value' pair per line — rendered as detail rows in the app.",
+    )
+    read = forms.BooleanField(
+        label="Mark as Read", required=False,
+        widget=forms.CheckboxInput(attrs={'class': _checkbox}),
+    )
+
+    def clean_user(self):
+        user_id = self.cleaned_data.get('user')
+        if not user_id:
+            raise forms.ValidationError('Please select a user.')
+        try:
+            return CustomUser.objects.get(pk=user_id)
+        except (CustomUser.DoesNotExist, ValueError, TypeError):
+            raise forms.ValidationError('Selected user does not exist.')
 
 
 class EditWithdrawalForm(forms.Form):

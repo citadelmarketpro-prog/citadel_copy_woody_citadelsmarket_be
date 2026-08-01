@@ -1,0 +1,86 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}{{ notification.title }} - CitadelMarkets Admin{% endblock %}
+{% block page_title %}Notification Detail{% endblock %}
+
+{% block content %}
+<div class="max-w-lg">
+    <div class="flex items-center gap-3 mb-6">
+        <a href="{% url 'dashboard:notifications_list' %}" class="text-sm text-gray-400 hover:text-gray-600 transition">
+            <i class="fas fa-arrow-left mr-1"></i> Back to Notifications
+        </a>
+    </div>
+
+    {% if messages %}
+    <div class="mb-4 space-y-2">
+        {% for message in messages %}
+        <div class="px-4 py-3 rounded-lg text-sm font-medium {% if message.tags == 'success' %}bg-emerald-50 text-emerald-800 border border-emerald-200{% else %}bg-red-50 text-red-800 border border-red-200{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="bg-white rounded-xl border border-gray-200/60 p-6">
+        <!-- Header -->
+        <div class="flex items-start gap-4 mb-6">
+            <div class="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0
+                {% if notification.type == 'trade' %}bg-blue-50 text-blue-600
+                {% elif notification.type == 'deposit' %}bg-emerald-50 text-emerald-600
+                {% elif notification.type == 'withdrawal' %}bg-amber-50 text-amber-600
+                {% elif notification.type == 'alert' %}bg-red-50 text-red-600
+                {% elif notification.type == 'news' %}bg-purple-50 text-purple-600
+                {% else %}bg-gray-100 text-gray-600{% endif %}">
+                <i class="fas fa-bell text-xl"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">{{ notification.title }}</h2>
+                <p class="text-sm text-gray-500">{{ notification.user.email }}</p>
+            </div>
+        </div>
+
+        <!-- Flags -->
+        <div class="flex gap-2 mb-6">
+            <span class="px-2.5 py-1 rounded-full text-xs font-medium
+                {% if notification.type == 'trade' %}bg-blue-50 text-blue-700
+                {% elif notification.type == 'deposit' %}bg-emerald-50 text-emerald-700
+                {% elif notification.type == 'withdrawal' %}bg-amber-50 text-amber-700
+                {% elif notification.type == 'alert' %}bg-red-50 text-red-700
+                {% elif notification.type == 'news' %}bg-purple-50 text-purple-700
+                {% else %}bg-gray-100 text-gray-600{% endif %}">
+                {{ notification.get_type_display }}
+            </span>
+            {% if notification.read %}
+            <span class="px-2.5 py-1 bg-gray-100 text-gray-500 rounded-full text-xs font-medium">Read</span>
+            {% else %}
+            <span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium">Unread</span>
+            {% endif %}
+        </div>
+
+        <!-- Message -->
+        <div class="mb-5">
+            <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Message</p>
+            <p class="text-sm text-gray-700">{{ notification.message }}</p>
+        </div>
+
+        <!-- Full Details -->
+        <div class="mb-6">
+            <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Full Details</p>
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-700 whitespace-pre-line">{{ notification.full_details }}</div>
+        </div>
+
+        <p class="text-xs text-gray-400 mb-6">Created {{ notification.created_at|date:"M d, Y H:i" }} · Updated {{ notification.updated_at|date:"M d, Y H:i" }}</p>
+
+        <!-- Actions -->
+        <div class="flex gap-3">
+            <a href="{% url 'dashboard:notification_edit' notification.id %}"
+                class="px-6 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-500 transition">
+                <i class="fas fa-edit mr-1"></i> Edit
+            </a>
+            <a href="{% url 'dashboard:notification_delete' notification.id %}"
+                class="px-6 py-2.5 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition">
+                <i class="fas fa-trash mr-1"></i> Delete
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
