@@ -135,11 +135,11 @@
         </div>
     </div>
 
-    <!-- Portfolio Growth Section -->
+    <!-- Portfolio Target Section -->
     <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-                <h3 class="text-base sm:text-lg font-bold text-gray-800">Portfolio Growth Section</h3>
+                <h3 class="text-base sm:text-lg font-bold text-gray-800">Portfolio Target Section</h3>
                 <p class="text-sm text-gray-500 mt-0.5">Show the deposit-target progress bar on this user's portfolio page.</p>
                 <span class="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold
                     {% if view_user.show_portfolio_growth %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-500{% endif %}">
@@ -154,7 +154,7 @@
                     class="w-full sm:w-auto px-5 py-2.5 rounded-lg font-bold text-sm text-white transition
                         {% if view_user.show_portfolio_growth %}bg-red-600 hover:bg-red-700{% else %}bg-green-600 hover:bg-green-700{% endif %}">
                     <i class="fas fa-{% if view_user.show_portfolio_growth %}eye-slash{% else %}chart-line{% endif %} mr-2"></i>
-                    {% if view_user.show_portfolio_growth %}Hide Portfolio Growth{% else %}Show Portfolio Growth{% endif %}
+                    {% if view_user.show_portfolio_growth %}Hide Portfolio Target{% else %}Show Portfolio Target{% endif %}
                 </button>
             </form>
         </div>

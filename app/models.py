@@ -199,7 +199,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     )
 
     show_portfolio_growth = models.BooleanField(
-        default=False,
+        default=True,
         help_text="Show the Portfolio Growth target section on the user's portfolio page"
     )
 

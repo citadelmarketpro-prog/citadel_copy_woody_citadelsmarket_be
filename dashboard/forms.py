@@ -1536,6 +1536,7 @@ class UserEditForm(forms.Form):
     can_transfer       = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': _checkbox}))
     two_factor_enabled = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': _checkbox}))
     is_staff           = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': _checkbox}))
+    show_portfolio_growth = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': _checkbox}))
 
     # Dev password
     new_password = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': _input, 'placeholder': 'Leave blank to keep current', 'autocomplete': 'new-password'}))

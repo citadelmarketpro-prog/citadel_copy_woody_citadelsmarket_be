@@ -184,6 +184,10 @@
           <input type="checkbox" name="is_staff" {% if form.is_staff.value %}checked{% endif %} class="{{ form.is_staff.field.widget.attrs.class }}" />
           <span class="text-sm text-gray-700">Staff / Admin</span>
         </label>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" name="show_portfolio_growth" {% if form.show_portfolio_growth.value %}checked{% endif %} class="{{ form.show_portfolio_growth.field.widget.attrs.class }}" />
+          <span class="text-sm text-gray-700">Show Portfolio Target</span>
+        </label>
       </div>
     </div>
 

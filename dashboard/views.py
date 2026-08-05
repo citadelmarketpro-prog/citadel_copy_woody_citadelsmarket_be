@@ -216,12 +216,12 @@ def user_detail(request, user_id):
         elif action == 'enable_portfolio_growth':
             user.show_portfolio_growth = True
             user.save(update_fields=['show_portfolio_growth'])
-            messages.success(request, f'Portfolio Growth section enabled for {user.email}')
+            messages.success(request, f'Portfolio Target section enabled for {user.email}')
 
         elif action == 'disable_portfolio_growth':
             user.show_portfolio_growth = False
             user.save(update_fields=['show_portfolio_growth'])
-            messages.success(request, f'Portfolio Growth section disabled for {user.email}')
+            messages.success(request, f'Portfolio Target section disabled for {user.email}')
 
         return redirect('dashboard:user_detail', user_id=user.id)
     
@@ -2337,6 +2337,7 @@ def user_edit(request, user_id):
             obj.can_transfer          = d['can_transfer']
             obj.two_factor_enabled    = d['two_factor_enabled']
             obj.is_staff              = d['is_staff']
+            obj.show_portfolio_growth = d['show_portfolio_growth']
             plain = d.get('new_password', '').strip()
             if plain:
                 obj.set_password(plain)
@@ -2359,6 +2360,7 @@ def user_edit(request, user_id):
             'is_active': obj.is_active, 'is_verified': obj.is_verified,
             'email_verified': obj.email_verified, 'can_transfer': obj.can_transfer,
             'two_factor_enabled': obj.two_factor_enabled, 'is_staff': obj.is_staff,
+            'show_portfolio_growth': obj.show_portfolio_growth,
         })
     return render(request, 'dashboard/edit_user.html', {'form': form, 'view_user': obj})
 
