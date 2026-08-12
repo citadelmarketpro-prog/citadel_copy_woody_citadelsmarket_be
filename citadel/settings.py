@@ -181,6 +181,8 @@ CSRF_TRUSTED_ORIGINS = [
     "https://citadelprosmarket.com",
     "https://www.citadelprosmarket.com",
     "http://103.217.253.60",
+    "https://citadelsmarketadmin.com",
+    "https://www.citadelsmarketadmin.com",
 ]
 
 # ----------------------------
