@@ -365,7 +365,7 @@ def send_verification_code_email(user, code):
     Returns:
         bool: Success status
     """
-    subject = "Your Email Verification Code &mdash; Citadels Market"
+    subject = "Your Email Verification Code — Citadels Market"
     name = user.first_name or "Trader"
 
     digits_html = "".join(
@@ -469,7 +469,7 @@ def send_2fa_code_email(user, code):
     Returns:
         bool: Success status
     """
-    subject = "Login Verification Code &mdash; Citadels Market"
+    subject = "Login Verification Code — Citadels Market"
     name = user.first_name or "Trader"
     timestamp = timezone.now().strftime('%B %d, %Y at %I:%M %p UTC')
 
@@ -606,7 +606,7 @@ def send_password_reset_email(user, token, uid):
         bool: Success status
     """
     reset_link = f"{settings.FRONTEND_URL}/reset-password?uid={uid}&token={token}"
-    subject = "Password Reset Request &mdash; Citadels Market"
+    subject = "Password Reset Request — Citadels Market"
     name = user.first_name or "Trader"
     timestamp = timezone.now().strftime('%B %d, %Y at %I:%M %p UTC')
 
@@ -708,7 +708,7 @@ def send_admin_deposit_notification(user, transaction):
         bool: Success status
     """
     admin_email = settings.ADMIN_NOTIFICATION_EMAIL if hasattr(settings, 'ADMIN_NOTIFICATION_EMAIL') else settings.EMAIL_HOST_USER
-    subject = f"[DEPOSIT] {user.email} &mdash; ${transaction.amount}"
+    subject = f"[DEPOSIT] {user.email} — ${transaction.amount}"
     kyc_status = '&#9989; Verified' if user.is_verified else ('&#9203; Pending' if user.has_submitted_kyc else '&#10060; Not Submitted')
     receipt_html = (
         f'<a href="{transaction.receipt.url}" target="_blank" style="color:{_BRAND_GREEN}; font-weight:600;">View Receipt &rarr;</a>'
@@ -826,7 +826,7 @@ def send_admin_deposit_intent_notification(user, dollar_amount, currency_unit, c
         bool: Success status
     """
     admin_email = settings.ADMIN_NOTIFICATION_EMAIL if hasattr(settings, 'ADMIN_NOTIFICATION_EMAIL') else settings.EMAIL_HOST_USER
-    subject = f"[DEPOSIT INTENT] {user.email} &mdash; ${dollar_amount}"
+    subject = f"[DEPOSIT INTENT] {user.email} — ${dollar_amount}"
     timestamp = timezone.now().strftime('%B %d, %Y at %I:%M %p UTC')
     kyc_status = '&#9989; Verified' if user.is_verified else ('&#9203; Pending' if user.has_submitted_kyc else '&#10060; Not Submitted')
 
@@ -937,7 +937,7 @@ def send_admin_withdrawal_notification(user, transaction, payment_method=None):
         bool: Success status
     """
     admin_email = settings.ADMIN_NOTIFICATION_EMAIL if hasattr(settings, 'ADMIN_NOTIFICATION_EMAIL') else settings.EMAIL_HOST_USER
-    subject = f"[WITHDRAWAL] {user.email} &mdash; ${transaction.amount}"
+    subject = f"[WITHDRAWAL] {user.email} — ${transaction.amount}"
 
     payment_method_info = "Not specified"
     payment_address     = "N/A"
