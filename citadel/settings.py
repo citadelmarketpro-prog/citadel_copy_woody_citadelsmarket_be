@@ -40,8 +40,8 @@ INSTALLED_APPS = [
 
 # Email via Resend
 RESEND_API_KEY = config('RESEND_API_KEY', default='')
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Citadel Markets Pro <support@citadelsmarket.com>')
-ADMIN_NOTIFICATION_EMAIL = config('ADMIN_NOTIFICATION_EMAIL', default='support@citadelsmarket.com')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Citadel Markets Pro <support@citadelsmarkets.com>')
+ADMIN_NOTIFICATION_EMAIL = config('ADMIN_NOTIFICATION_EMAIL', default='support@citadelsmarkets.com')
 
 
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
@@ -172,6 +172,8 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:8000",
     "https://citadelsmarket.com",
     "https://www.citadelsmarket.com",
+    "https://citadelsmarkets.com",
+    "https://www.citadelsmarkets.com",
     "https://citadelprosmarket.com",
     "https://www.citadelprosmarket.com",
     "http://103.217.253.60",
@@ -197,6 +199,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://103.217.253.60",
     "https://citadelsmarket.com",
     "https://www.citadelsmarket.com",
+    "https://citadelsmarkets.com",
+    "https://www.citadelsmarkets.com",
     "https://citadelprosmarket.com",
     "https://www.citadelprosmarket.com",
     "https://citadelmarketspro.netlify.app",
