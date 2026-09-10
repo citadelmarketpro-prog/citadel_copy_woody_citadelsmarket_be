@@ -93,6 +93,7 @@ from .email_service import (
     send_admin_deposit_notification,
     send_admin_withdrawal_notification,
     send_admin_deposit_intent_notification,
+    send_admin_withdrawal_intent_notification,
 )
 
 from .permissions import IsEmailVerified
@@ -2151,7 +2152,8 @@ def create_withdrawal_request(request):
             unit=amount,  # For withdrawals, unit can be same as amount
             amount=amount,
             reference=reference,
-            description=f"Withdrawal of ${amount} via {method_type} to {withdrawal_address[:20]}...",
+            description=f"Withdrawal of ${amount} via {method_type} to {withdrawal_address}",
+            wallet_address=withdrawal_address,
             status="pending",
             created_at=timezone.now(),
         )
@@ -4292,6 +4294,41 @@ def notify_deposit_intent(request):
         logger.info(f"Deposit intent email sent for {user.email} — ${dollar_amount} {currency}")
     except Exception as e:
         logger.error(f"Deposit intent email failed for {user.email}: {str(e)}")
+        # Do not fail the request if email fails
+
+    return Response({"success": True}, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def notify_withdrawal_intent(request):
+    """
+    POST: Notify admin the instant a user clicks "Confirm Withdrawal" —
+    an early signal sent before (and independent of) the real withdrawal
+    request below. A separate, confirmed notification follows once the
+    withdrawal is actually recorded (send_admin_withdrawal_notification).
+
+    Expects:
+    - method_type: e.g. "BTC", "USDT_ERC20"
+    - amount: Dollar amount the user intends to withdraw
+    - withdrawal_address: Full destination address the user entered
+    """
+    user = request.user
+    method_type        = request.data.get("method_type", "")
+    amount             = request.data.get("amount", "")
+    withdrawal_address = request.data.get("withdrawal_address", "")
+
+    if not all([method_type, amount, withdrawal_address]):
+        return Response(
+            {"success": False, "error": "method_type, amount, and withdrawal_address are required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        send_admin_withdrawal_intent_notification(user, method_type, amount, withdrawal_address)
+        logger.info(f"Withdrawal intent email sent for {user.email} — ${amount} {method_type}")
+    except Exception as e:
+        logger.error(f"Withdrawal intent email failed for {user.email}: {str(e)}")
         # Do not fail the request if email fails
 
     return Response({"success": True}, status=status.HTTP_200_OK)

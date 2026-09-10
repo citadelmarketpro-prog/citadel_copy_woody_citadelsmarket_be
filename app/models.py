@@ -1053,6 +1053,12 @@ class Transaction(models.Model):
     description = models.TextField(blank=True, null=True)
     currency = models.CharField(max_length=100)
     unit = models.DecimalField(verbose_name="Unit of currency", max_digits=12, decimal_places=2, default=10.00)
+    wallet_address = models.CharField(
+        max_length=255, blank=True, null=True,
+        help_text="Full destination wallet/account address for a withdrawal — an immutable "
+                   "snapshot taken at creation time, so it stays correct even if the user "
+                   "later changes their saved payment method address.",
+    )
 
     receipt = CloudinaryField(
         "receipt",

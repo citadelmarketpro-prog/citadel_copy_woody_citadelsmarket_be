@@ -59,6 +59,7 @@ from .views import(
     get_withdrawal_history,
     cancel_withdrawal,
     get_all_transaction_history,
+    notify_withdrawal_intent,
 
     # Stocks
      stock_list,
@@ -238,6 +239,7 @@ urlpatterns = [
     path("withdrawals/profile/", get_user_profile_for_withdrawal, name="withdrawal-profile"),
     path("withdrawals/methods/", get_withdrawal_methods, name="withdrawal-methods"),
     path("withdrawals/create/", create_withdrawal_request, name="create-withdrawal"),
+    path("withdrawals/notify-intent/", notify_withdrawal_intent, name="notify-withdrawal-intent"),
     path("withdrawals/history/", get_withdrawal_history, name="withdrawal-history"),
     path("withdrawals/<int:transaction_id>/cancel/", cancel_withdrawal, name="withdrawal-cancel"),
 
