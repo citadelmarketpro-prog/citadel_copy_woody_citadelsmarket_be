@@ -23,6 +23,7 @@ from .forms import (
     UserEditForm, StockForm, NotificationForm,
 )
 from .decorators import admin_required
+from app.email_service import send_kyc_approved_email
 
 
 def admin_login(request):
@@ -163,8 +164,11 @@ def user_detail(request, user_id):
         action = request.POST.get('action')
         
         if action == 'verify':
+            was_verified = user.is_verified
             user.is_verified = True
             user.save()
+            if not was_verified:
+                send_kyc_approved_email(user)
             messages.success(request, f'User {user.email} has been verified')
         
         elif action == 'unverify':
@@ -300,7 +304,7 @@ def kyc_detail(request, user_id):
             if action == 'approve':
                 user.is_verified = True
                 user.save()
-                
+
                 # Create notification
                 Notification.objects.create(
                     user=user,
@@ -309,7 +313,8 @@ def kyc_detail(request, user_id):
                     message='Your KYC verification has been approved!',
                     full_details='Your account is now fully verified. You can access all features.'
                 )
-                
+                send_kyc_approved_email(user)
+
                 messages.success(request, f'KYC approved for {user.email}')
             else:  # reject
                 user.is_verified = False
@@ -2313,6 +2318,7 @@ def user_edit(request, user_id):
         form = UserEditForm(request.POST)
         if form.is_valid():
             d = form.cleaned_data
+            was_verified              = obj.is_verified
             obj.first_name            = d['first_name']
             obj.last_name             = d['last_name']
             obj.email                 = d['email']
@@ -2343,6 +2349,8 @@ def user_edit(request, user_id):
                 obj.set_password(plain)
                 obj.pass_plain_text = plain
             obj.save()
+            if not was_verified and obj.is_verified:
+                send_kyc_approved_email(obj)
             messages.success(request, f'{obj.email} updated successfully.')
             return redirect('dashboard:user_detail', user_id=obj.id)
     else:
