@@ -5,9 +5,9 @@ from django.shortcuts import redirect, render
 from django.conf import settings
 from django.conf.urls.static import static
 
-admin.site.site_header = "Citadels Market Administration"
-admin.site.site_title = "Citadels Market Admin Portal"
-admin.site.index_title = "Welcome to Citadels Market Admin Portal"
+admin.site.site_header = "OsaicMarkets Administration"
+admin.site.site_title = "OsaicMarkets Admin Portal"
+admin.site.index_title = "Welcome to OsaicMarkets Admin Portal"
 
 def home(request):
     return redirect("dashboard:dashboard")

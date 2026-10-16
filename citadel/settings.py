@@ -40,8 +40,8 @@ INSTALLED_APPS = [
 
 # Email via Resend
 RESEND_API_KEY = config('RESEND_API_KEY', default='')
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='citamarkets <support@citamarkets.com>')
-ADMIN_NOTIFICATION_EMAIL = config('ADMIN_NOTIFICATION_EMAIL', default='support@citamarkets.com')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='OsaicMarkets <support@osaicmarkets.com>')
+ADMIN_NOTIFICATION_EMAIL = config('ADMIN_NOTIFICATION_EMAIL', default='support@osaicmarkets.com')
 
 
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
@@ -170,8 +170,8 @@ WHITENOISE_AUTOREFRESH = DEBUG
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    "https://citamarkets.com",
-    "https://www.citamarkets.com",
+    "https://osaicmarkets.com",
+    "https://www.osaicmarkets.com",
     "https://citadelprosmarket.com",
     "https://www.citadelprosmarket.com",
     "http://103.217.253.60",
@@ -181,20 +181,20 @@ CSRF_TRUSTED_ORIGINS = [
 # SESSION
 # ----------------------------
 SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
-SESSION_COOKIE_NAME = 'citadelsmarket_session'
+SESSION_COOKIE_NAME = 'osaicmarkets_session'
 SESSION_COOKIE_AGE = 86400 * 30        # 30 days
 SESSION_SAVE_EVERY_REQUEST = True       # reset expiry on each request
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_NAME = 'csrftoken_citadelsmarket'
+CSRF_COOKIE_NAME = 'csrftoken_osaicmarkets'
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:3001",
     "http://103.217.253.60",
-    "https://citamarkets.com",
-    "https://www.citamarkets.com",
+    "https://osaicmarkets.com",
+    "https://www.osaicmarkets.com",
     "https://citadelprosmarket.com",
     "https://www.citadelprosmarket.com",
     "https://citadelmarketspro.netlify.app",
