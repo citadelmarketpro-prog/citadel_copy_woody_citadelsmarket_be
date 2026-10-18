@@ -1,0 +1,141 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Send Email - OsaicMarkets Admin{% endblock %}
+{% block page_title %}Send Email{% endblock %}
+{% block page_subtitle %}Select recipients for a custom email{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mb-6 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+    <form method="get" class="flex flex-1 gap-3">
+        <input type="text" name="search" value="{{ q }}" placeholder="Search by email, name…"
+            class="flex-1 px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm md:text-base">
+        <button type="submit" class="px-6 py-2 md:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm md:text-base font-semibold">
+            <i class="fas fa-search mr-2"></i>Search
+        </button>
+        {% if q %}<a href="{% url 'dashboard:custom_email_list' %}" class="px-4 py-2 md:py-3 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition text-sm md:text-base font-medium">Clear</a>{% endif %}
+    </form>
+    <a href="{% url 'dashboard:custom_email_history' %}" class="shrink-0 px-5 py-2 md:py-3 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition text-sm md:text-base font-medium text-center">
+        <i class="fas fa-history mr-1.5"></i>History
+    </a>
+</div>
+
+<!-- Bulk action bar -->
+<div id="bulk-bar" class="hidden mb-4 flex flex-wrap items-center gap-3 px-4 py-3 rounded-lg bg-blue-50 border border-blue-200">
+    <span id="bulk-count" class="text-sm font-semibold text-blue-700">0 selected</span>
+    <button type="button" onclick="submitBulk()" class="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition">
+        <i class="fas fa-paper-plane mr-1"></i>Compose Email to Selected
+    </button>
+    <button type="button" onclick="clearAll()" class="px-3 py-1.5 bg-white text-gray-600 border border-gray-300 rounded-lg text-xs font-medium hover:bg-gray-50 transition">Clear</button>
+</div>
+
+<form id="bulk-form" method="post" action="{% url 'dashboard:custom_email_compose' %}">
+    {% csrf_token %}
+    <div id="hidden-user-ids"></div>
+</form>
+
+<div class="bg-white rounded-xl shadow-lg overflow-hidden">
+    {% if page_obj.object_list %}
+    <div class="overflow-auto">
+        <table class="w-full min-w-[700px]">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-4 py-3 w-8"><input type="checkbox" id="select-all" onchange="toggleAll(this)"></th>
+                    <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+            {% for u in page_obj %}
+            <tr class="hover:bg-gray-50 transition">
+                <td class="px-4 py-3"><input type="checkbox" class="user-check" value="{{ u.pk }}" onchange="onCheckChange(this)"></td>
+                <td class="px-4 md:px-6 py-3">
+                    <a href="{% url 'dashboard:user_detail' u.pk %}" class="font-medium text-blue-600 hover:underline">{{ u.email }}</a>
+                </td>
+                <td class="px-4 md:px-6 py-3 text-gray-700">{% if u.first_name or u.last_name %}{{ u.first_name }} {{ u.last_name }}{% else %}<span class="text-gray-300">—</span>{% endif %}</td>
+                <td class="px-4 md:px-6 py-3">
+                    {% if u.is_active %}<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Active</span>
+                    {% else %}<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Inactive</span>{% endif %}
+                </td>
+                <td class="px-4 md:px-6 py-3 text-xs text-gray-500">{{ u.date_joined|date:"M d, Y" }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="px-4 md:px-6 py-4 border-t border-gray-200 bg-gray-50">
+        {% include 'dashboard/pagination.html' %}
+    </div>
+    {% else %}
+    <div class="px-6 py-16 text-center text-gray-400">
+        <i class="fas fa-users text-5xl mb-4 text-gray-300 block"></i>
+        <p class="text-base">No users found</p>
+    </div>
+    {% endif %}
+</div>
+
+<p class="text-xs mt-3 text-gray-400">Selections are kept as you page or search through results — tick users across as many pages as you like, then compose when ready.</p>
+
+<script>
+const SELECTION_KEY = 'citadel_custom_email_selected_ids';
+
+function getSelected() {
+  try { return new Set(JSON.parse(sessionStorage.getItem(SELECTION_KEY) || '[]')); }
+  catch (e) { return new Set(); }
+}
+function saveSelected(set) { sessionStorage.setItem(SELECTION_KEY, JSON.stringify([...set])); }
+
+function initSelection() {
+  const selected = getSelected();
+  document.querySelectorAll('.user-check').forEach(cb => { cb.checked = selected.has(cb.value); });
+  syncSelectAll();
+  updateBulk();
+}
+function syncSelectAll() {
+  const boxes = [...document.querySelectorAll('.user-check')];
+  const selectAll = document.getElementById('select-all');
+  selectAll.checked = boxes.length > 0 && boxes.every(c => c.checked);
+}
+function onCheckChange(cb) {
+  const selected = getSelected();
+  if (cb.checked) selected.add(cb.value); else selected.delete(cb.value);
+  saveSelected(selected);
+  syncSelectAll();
+  updateBulk();
+}
+function updateBulk() {
+  const count = getSelected().size;
+  const bar = document.getElementById('bulk-bar');
+  document.getElementById('bulk-count').textContent = count + ' selected';
+  bar.classList.toggle('hidden', count === 0);
+}
+function toggleAll(el) {
+  const selected = getSelected();
+  document.querySelectorAll('.user-check').forEach(c => {
+    c.checked = el.checked;
+    if (el.checked) selected.add(c.value); else selected.delete(c.value);
+  });
+  saveSelected(selected);
+  updateBulk();
+}
+function clearAll() {
+  sessionStorage.removeItem(SELECTION_KEY);
+  document.querySelectorAll('.user-check').forEach(c => { c.checked = false; });
+  document.getElementById('select-all').checked = false;
+  updateBulk();
+}
+function submitBulk() {
+  const ids = [...getSelected()];
+  const container = document.getElementById('hidden-user-ids');
+  container.innerHTML = '';
+  ids.forEach(id => {
+    const inp = document.createElement('input');
+    inp.type = 'hidden'; inp.name = 'user_ids'; inp.value = id;
+    container.appendChild(inp);
+  });
+  sessionStorage.removeItem(SELECTION_KEY);
+  document.getElementById('bulk-form').submit();
+}
+document.addEventListener('DOMContentLoaded', initSelection);
+</script>
+{% endblock %}

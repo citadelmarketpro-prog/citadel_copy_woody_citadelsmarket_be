@@ -340,6 +340,19 @@
                         <span class="ml-3">Change Password</span>
                     </a>
                 </li>
+                <li><div class="text-xs text-blue-300 uppercase tracking-wider mt-6 mb-2 px-3">Communication</div></li>
+                <li>
+                    <a href="{% url 'dashboard:custom_email_list' %}" class="flex items-center p-3 text-white rounded-lg hover:bg-blue-700 {% if request.resolver_match.url_name == 'custom_email_list' or request.resolver_match.url_name == 'custom_email_compose' %}bg-blue-700{% endif %}">
+                        <i class="fas fa-paper-plane w-6"></i>
+                        <span class="ml-3">Send Email</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'dashboard:custom_email_history' %}" class="flex items-center p-3 text-white rounded-lg hover:bg-blue-700 {% if request.resolver_match.url_name == 'custom_email_history' or request.resolver_match.url_name == 'custom_email_detail' %}bg-blue-700{% endif %}">
+                        <i class="fas fa-history w-6"></i>
+                        <span class="ml-3">Email History</span>
+                    </a>
+                </li>
             </ul>
             
             <!-- Logout -->
